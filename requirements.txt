@@ -1,0 +1,3 @@
+git+https://github.com/twrecked/pyaarlo
+python-decouple
+python-statemachine
