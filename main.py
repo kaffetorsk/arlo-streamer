@@ -7,6 +7,7 @@ import paho.mqtt.client as mqtt
 from camera import Camera
 import base64
 import json
+import time
 
 ARLO_USER = config('ARLO_USER')
 ARLO_PASS = config('ARLO_PASS')
@@ -26,22 +27,6 @@ logging.basicConfig(
     level = logging.DEBUG if DEBUG else logging.INFO,
     format = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
     )
-
-
-# Debug arlo events
-def arlo_debug(arlo):
-    def attribute_changed(device, attr, value):
-        print('attribute_changed', time.strftime("%H:%M:%S"),
-            device.name + ':' + attr + ':' + str(value)[:80]
-            )
-
-    for camera in arlo.cameras:
-        print("camera: name={},device_id={},state={}".format(camera.name,
-            camera.device_id, camera.state)
-            )
-
-        camera.add_attr_callback('*', attribute_changed)
-
 
 
 async def main():
@@ -68,9 +53,6 @@ async def main():
                 "payload": base64.b64encode(picture).decode("utf-8")
             })
         )
-
-    if DEBUG:
-        arlo_debug(arlo)
 
     cameras = [await Camera.create(
         c, FFMPEG_OUT, MOTION_TIMEOUT

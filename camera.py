@@ -71,8 +71,10 @@ class Camera(object):
     async def stop_stream(self):
         self.stream.kill()
         self.stream = await self._start_idle_stream()
-        self._arlo.stop_activity()
-        self.state = 'idle'
+        try:
+            await self.event_loop.run_in_executor(None, self._arlo.stop_activity)
+        except AttributeError:
+            pass
 
     def _attribute_changed(self, device, attr, value):
         if device == self._arlo:
@@ -88,8 +90,11 @@ class Camera(object):
                         self.timeout_task = asyncio.run_coroutine_threadsafe(self._stream_timeout(), self.event_loop)
 
                 case 'activityState':
-                    if  value == 'idle' and self.state == 'connecting':
-                        self._arlo.get_stream()
+                    if  value == 'idle':
+                        if self.state == 'connecting':
+                            self._arlo.get_stream()
+                        if self.state == 'streaming':
+                            self.state = 'idle'
                     elif value == 'userStreamActive' and self.state != 'streaming':
                         asyncio.run_coroutine_threadsafe(self._stream_started(), self.event_loop)
 
