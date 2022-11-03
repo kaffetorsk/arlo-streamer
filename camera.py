@@ -29,7 +29,6 @@ class Camera(object):
 
         async for device, attr, value in event_get:
             if device == self._arlo:
-                # await self.on_event(attr, value)
                 asyncio.create_task(self.on_event(attr, value))
 
     async def on_event(self, attr, value):
@@ -40,7 +39,6 @@ class Camera(object):
                 await self.on_arlo_state(value)
             case 'presignedLastImageData':
                 if self._listen_pictures:
-                    # self.event_loop.call_soon(self.put_picture, value)
                     self.put_picture(value)
             case _:
                 pass
@@ -56,14 +54,12 @@ class Camera(object):
                 self.timeout_task.cancel()
             if not motion:
                 self.timeout_task = asyncio.create_task(self._stream_timeout())
-                # await self.timeout_task
 
     async def on_arlo_state(self, state):
         if state == 'idle':
             if self.get_state() in ['connecting', 'streaming']:
                 self.request_stream()
         elif state == 'userStreamActive' and self.get_state() != 'streaming':
-            # asyncio.create_task(self._stream_started())
             await self._stream_started()
 
     async def set_state(self, new_state):
