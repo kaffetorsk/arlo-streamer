@@ -22,45 +22,48 @@ class Camera(object):
 
     async def run(self):
         self.event_loop = asyncio.get_running_loop()
-        event_get, event_put = self.make_iter()
+        event_get, event_put = self.create_sync_async_channel()
         self._arlo.add_attr_callback('*', event_put)
         self.proxy_stream, self.proxy_writer = await self._start_proxy_stream()
         await self.set_state('idle')
 
         async for device, attr, value in event_get:
             if device == self._arlo:
-                await self.on_event(attr, value)
+                # await self.on_event(attr, value)
+                asyncio.create_task(self.on_event(attr, value))
 
     async def on_event(self, attr, value):
-        print(attr, value)
         match attr:
             case 'motionDetected':
                 await self.on_motion(value)
             case 'activityState':
                 await self.on_arlo_state(value)
             case 'presignedLastImageData':
-                await self.pictures.put(value)
+                if self._listen_pictures:
+                    # self.event_loop.call_soon(self.put_picture, value)
+                    self.put_picture(value)
             case _:
                 pass
 
     async def on_motion(self, motion):
         logging.info(f"{self.name} motion: {motion}")
-        if motion and self.state == 'idle':
-            await self.set_state('connecting')
+        if self.get_state() == 'idle':
+            if motion:
+                await self.set_state('connecting')
 
-        if (not motion) and self.state != 'idle':
+        else:
             if self.timeout_task:
                 self.timeout_task.cancel()
-            self.timeout_task = asyncio.create_task(self._stream_timeout)
-            await self.timeout_task
+            if not motion:
+                self.timeout_task = asyncio.create_task(self._stream_timeout())
+                # await self.timeout_task
 
     async def on_arlo_state(self, state):
         if state == 'idle':
-            if self.state == 'connecting':
-                await self.request_stream()
-            if self.state == 'streaming':
-                await self.set_state('idle')
-        elif state == 'userStreamActive' and self.state != 'streaming':
+            if self.get_state() in ['connecting', 'streaming']:
+                self.request_stream()
+        elif state == 'userStreamActive' and self.get_state() != 'streaming':
+            # asyncio.create_task(self._stream_started())
             await self._stream_started()
 
     async def set_state(self, new_state):
@@ -75,10 +78,10 @@ class Camera(object):
     async def _on_state_change(self, new_state):
         match new_state:
             case 'idle':
-                await self.stop_stream()
+                self.stop_stream()
                 self.stream = await self._start_idle_stream()
             case 'connecting':
-                await self.request_stream()
+                self.request_stream()
             case 'streaming':
                 pass
 
@@ -99,11 +102,11 @@ class Camera(object):
             )
         return proc
 
-    async def request_stream(self):
+    def request_stream(self):
         self.event_loop.run_in_executor(None, self._arlo.get_stream)
 
     async def _stream_started(self):
-        self.state = 'streaming'
+        await self.set_state('streaming')
         stream = self._arlo.get_stream()
         if stream:
             self.stream.kill()
@@ -112,28 +115,33 @@ class Camera(object):
                     '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
                 stdout=self.proxy_writer, stderr=subprocess.DEVNULL
                 )
-            rc = await self.stream.wait()
-        if (not stream) or (rc != -9):
-            await self.set_state('connecting')
 
     async def _stream_timeout(self):
         await asyncio.sleep(self.timeout)
         await self.set_state('idle')
 
-    async def stop_stream(self):
+    def stop_stream(self):
         if self.stream:
             self.stream.kill()
-        self.stream = await self._start_idle_stream()
-        try:
-            await self.event_loop.run_in_executor(
-                    None, self._arlo.stop_activity)
-        except AttributeError:
-            pass
+
+        async def stop_arlo_activity():
+            try:
+                await self.event_loop.run_in_executor(
+                        None, self._arlo.stop_activity)
+            except AttributeError:
+                pass
 
     async def get_pictures(self):
         self._listen_pictures = True
         while True:
             yield self.name, await self.pictures.get()
+            self.pictures.task_done()
+
+    def put_picture(self, pic):
+        try:
+            self.pictures.put_nowait(pic)
+        except asyncio.QueueFull:
+            logging.info("picture queue full, ignoring")
 
     async def mqtt_control(self, payload):
         match payload.upper():
@@ -146,7 +154,7 @@ class Camera(object):
                 await self.event_loop.run_in_executor(
                         None, self._arlo.request_snapshot)
 
-    def make_iter(self):
+    def create_sync_async_channel(self):
         queue = asyncio.Queue()
 
         def put(*args):
@@ -155,6 +163,7 @@ class Camera(object):
         async def get():
             while True:
                 yield await queue.get()
+                queue.task_done()
         return get(), put
 
     def shutdown(self, signal):
