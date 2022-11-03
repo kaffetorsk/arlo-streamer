@@ -42,7 +42,6 @@ async def main():
         logging.info('Shutting down...')
         for c in cameras:
             c.shutdown(signal)
-            # mqtt_client.loop_stop()
             asyncio.get_running_loop().stop()
 
     # Register callbacks for shutdown
