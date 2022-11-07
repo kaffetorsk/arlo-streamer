@@ -15,6 +15,7 @@ MQTT_BROKER = config('MQTT_BROKER', default=None)
 FFMPEG_OUT = config('FFMPEG_OUT')
 MOTION_TIMEOUT = config('MOTION_TIMEOUT', default=60, cast=int)
 ARLO_REFRESH = config('ARLO_REFRESH', default=3600, cast=int)
+STATUS_INTERVAL = config('STATUS_INTERVAL', default=120, cast=int)
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 
@@ -32,7 +33,10 @@ async def main():
         tfa_host=IMAP_HOST, tfa_username=IMAP_USER, tfa_password=IMAP_PASS
         )
 
-    cameras = [Camera(c, FFMPEG_OUT, MOTION_TIMEOUT) for c in arlo.cameras]
+    cameras = [Camera(
+        c, FFMPEG_OUT, MOTION_TIMEOUT, STATUS_INTERVAL
+        ) for c in arlo.cameras]
+
     [asyncio.create_task(c.run()) for c in cameras]
     if MQTT_BROKER:
         asyncio.create_task(mqtt.mqtt_client(cameras))
