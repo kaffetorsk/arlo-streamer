@@ -6,6 +6,7 @@ import signal
 from camera import Camera
 import mqtt
 
+# Read config from ENV
 ARLO_USER = config('ARLO_USER')
 ARLO_PASS = config('ARLO_PASS')
 IMAP_HOST = config('IMAP_HOST')
@@ -18,7 +19,7 @@ ARLO_REFRESH = config('ARLO_REFRESH', default=3600, cast=int)
 STATUS_INTERVAL = config('STATUS_INTERVAL', default=120, cast=int)
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-
+# Initialize logging
 logging.basicConfig(
     level=logging.DEBUG if DEBUG else logging.INFO,
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
@@ -26,18 +27,21 @@ logging.basicConfig(
 
 
 async def main():
-    # login with 2FA
+    # login to arlo with 2FA
     arlo = pyaarlo.PyArlo(
         username=ARLO_USER, password=ARLO_PASS,
         tfa_source='imap', tfa_type='email',
         tfa_host=IMAP_HOST, tfa_username=IMAP_USER, tfa_password=IMAP_PASS
         )
 
+    # Initialize and start cameras
     cameras = [Camera(
         c, FFMPEG_OUT, MOTION_TIMEOUT, STATUS_INTERVAL
         ) for c in arlo.cameras]
 
     [asyncio.create_task(c.run()) for c in cameras]
+
+    # Initialize mqtt service
     if MQTT_BROKER:
         asyncio.create_task(mqtt.mqtt_client(cameras))
 
@@ -52,12 +56,17 @@ async def main():
     signal.signal(signal.SIGTERM, shutdown)
     signal.signal(signal.SIGINT, shutdown)
 
+    # Wait for periodic refresh
     await asyncio.sleep(ARLO_REFRESH)
+
+    logging.info('Periodic refresh, restarting...')
+    for c in cameras:
+        await c.shutdown_when_idle()
+
 
 while True:
     try:
         asyncio.run(main())
-        logging.info("Refreshing")
     except RuntimeError:
         logging.info("Closed.")
         break
