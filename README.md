@@ -1,5 +1,5 @@
 # arlo-streamer
-Python script that turns arlo cameras into continous streams through ffmpeg
+Python script that turns arlo cameras into continuous streams through ffmpeg
 This allow arlo cameras to be used in the NVR of your choosing. (e.g. [Frigate](https://frigate.video/))
 
 The streams will provide an "idle" picture when the camera is not actively streaming.
