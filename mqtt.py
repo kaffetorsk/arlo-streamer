@@ -5,12 +5,14 @@ from aiostream import stream
 import logging
 from decouple import config
 import asyncio
+import time
 
 MQTT_BROKER = config('MQTT_BROKER')
 MQTT_RECONNECT_INTERVAL = config('MQTT_RECONNECT_INTERVAL', default=5)
 MQTT_TOPIC_PICTURE = config('MQTT_TOPIC_PICTURE', default='arlo/picture')
-MQTT_TOPIC_LOCATION = config('MQTT_TOPIC_LOCATION', default='arlo/location')
+# MQTT_TOPIC_LOCATION = config('MQTT_TOPIC_LOCATION', default='arlo/location')
 MQTT_TOPIC_CONTROL = config('MQTT_TOPIC_CONTROL', default='arlo/control/{name}')
+MQTT_TOPIC_STATUS = config('MQTT_TOPIC_STATUS', default='arlo/status/{name}')
 
 
 async def mqtt_client(cameras):
@@ -20,7 +22,8 @@ async def mqtt_client(cameras):
                 logging.info(f"MQTT client connected to {MQTT_BROKER}")
                 await asyncio.gather(
                     pic_streamer(client, cameras),
-                    mqtt_reader(client, cameras)
+                    mqtt_reader(client, cameras),
+                    device_status(client, cameras)
                     )
         except aiomqtt.MqttError as error:
             logging.info(f'MQTT "{error}". reconnecting.')
@@ -31,12 +34,23 @@ async def pic_streamer(client, cameras):
     pics = stream.merge(*[c.get_pictures() for c in cameras])
     async with pics.stream() as streamer:
         async for name, data in streamer:
+            timestamp = str(time.time()).replace(".", "")
             await client.publish(
                 MQTT_TOPIC_PICTURE.format(name=name),
                 payload=json.dumps({
-                    "filename": "test.jpg",
+                    "filename": f"{timestamp} {name}.jpg",
                     "payload": b64.b64encode(data).decode("utf-8")
                     }))
+
+
+async def device_status(client, cameras):
+    statuses = stream.merge(*[c.listen_status() for c in cameras])
+    async with statuses.stream() as streamer:
+        async for name, status in streamer:
+            await client.publish(
+                MQTT_TOPIC_STATUS.format(name=name),
+                payload=json.dumps(status)
+                )
 
 
 async def mqtt_reader(client, cameras):
@@ -46,5 +60,5 @@ async def mqtt_reader(client, cameras):
             await client.subscribe(name)
         async for message in messages:
             if message.topic in cams:
-                await cams[name].mqtt_control(
+                await cams[message.topic].mqtt_control(
                     message.payload.decode("utf-8"))

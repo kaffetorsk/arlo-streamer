@@ -8,12 +8,13 @@ import os
 class Camera(object):
     STATES = ['idle', 'connecting', 'streaming']
 
-    def __init__(self, arlo_camera, ffmpeg_out, motion_timeout):
+    def __init__(self, arlo_camera, ffmpeg_out, motion_timeout, status_interval):
         self._arlo = arlo_camera
         self.name = self._arlo.name.replace(" ", "_")
         self.ffmpeg_out = shlex.split(ffmpeg_out.format(name=self.name))
         self.timeout = motion_timeout
         self.timeout_task = None
+        self.status_interval = status_interval
         self._state = None
         self.stream = None
         self.pictures = asyncio.Queue()
@@ -92,7 +93,7 @@ class Camera(object):
     async def _start_idle_stream(self):
         proc = await asyncio.create_subprocess_exec(
             *['ffmpeg', '-re', '-loop', '1', '-f', 'image2',
-                '-i', 'arlo.png', '-r', '30', '-c:v', 'libx264',
+                '-i', 'eye.png', '-r', '30', '-c:v', 'libx264',
                 '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
             stdout=self.proxy_writer, stderr=subprocess.DEVNULL
             )
@@ -121,15 +122,16 @@ class Camera(object):
         await self.set_state('idle')
 
     def stop_stream(self):
-        if self.stream:
+        try:
             self.stream.kill()
+        except ProcessLookupError:
+            pass
 
-        async def stop_arlo_activity():
-            try:
-                await self.event_loop.run_in_executor(
-                        None, self._arlo.stop_activity)
-            except AttributeError:
-                pass
+        try:
+            await self.event_loop.run_in_executor(
+                    None, self._arlo.stop_activity)
+        except AttributeError:
+            pass
 
     async def get_pictures(self):
         self._listen_pictures = True
@@ -142,6 +144,14 @@ class Camera(object):
             self.pictures.put_nowait(pic)
         except asyncio.QueueFull:
             logging.info("picture queue full, ignoring")
+
+    async def listen_status(self):
+        while True:
+            status = {
+                "battery": self._arlo.battery_level
+                }
+            yield self.name, status
+            await asyncio.sleep(self.status_interval)
 
     async def mqtt_control(self, payload):
         match payload.upper():
