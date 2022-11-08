@@ -33,6 +33,7 @@ class Camera(object):
         self._timeout_task = None
         self.status_interval = status_interval
         self._state = None
+        self._state_event = asyncio.Event()
         self.stream = None
         self._pictures = asyncio.Queue()
         self._listen_pictures = False
@@ -51,6 +52,7 @@ class Camera(object):
         self._arlo.add_attr_callback('*', event_put)
         self.proxy_stream, self.proxy_writer = await self._start_proxy_stream()
         await self.set_state('idle')
+        asyncio.create_task(self._periodic_status_trigger())
 
         async for device, attr, value in event_get:
             if device == self._arlo:
@@ -111,6 +113,7 @@ class Camera(object):
 
     # Handle internal state change, stop or start stream
     async def _on_state_change(self, new_state):
+        self._state_event.set()
         match new_state:
             case 'idle':
                 self.stop_stream()
@@ -201,16 +204,23 @@ class Camera(object):
         except asyncio.QueueFull:
             logging.info("picture queue full, ignoring")
 
+    async def _periodic_status_trigger(self):
+        while True:
+            self._state_event.set()
+            await asyncio.sleep(self.status_interval)
+
     async def listen_status(self):
         """
         Async generator, periodically yields status messages for mqtt
         """
         while True:
+            await self._state_event.wait()
             status = {
-                "battery": self._arlo.battery_level
+                "battery": self._arlo.battery_level,
+                "state": self.get_state()
                 }
             yield self.name, status
-            await asyncio.sleep(self.status_interval)
+            self._state_event.clear()
 
     async def mqtt_control(self, payload):
         """
