@@ -253,7 +253,7 @@ class Camera(object):
             logging.info(f"{self.name} active, waiting...")
             while self.get_state() != 'idle':
                 await asyncio.sleep(1)
-        self.shutdown()
+        self.shutdown(None)
 
     def shutdown(self, signal):
         """
