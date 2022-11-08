@@ -30,10 +30,11 @@ STATUS_INTERVAL: Time between published status messages (in seconds) (default: 1
 DEBUG: True enables full debug (default: False)
 ```
 ### Running
-`python main.py`
+```
+python main.py
+```
 or
 ```
-docker build -t kaffetorsk/arlo-streamer .
 docker run -d --env-file .env kaffetorsk/arlo-streamer
 ```
 ### MQTT
