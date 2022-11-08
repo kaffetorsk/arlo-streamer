@@ -62,6 +62,7 @@ async def main():
     logging.info('Periodic refresh, restarting...')
     for c in cameras:
         await c.shutdown_when_idle()
+    arlo.stop(logout=True)
 
 
 while True:
