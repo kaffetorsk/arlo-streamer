@@ -1,3 +1,5 @@
+[![Dependency Review](https://github.com/kaffetorsk/arlo-streamer/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/kaffetorsk/arlo-streamer/actions/workflows/dependency-review.yml) [![CodeQL](https://github.com/kaffetorsk/arlo-streamer/actions/workflows/codeql.yml/badge.svg)](https://github.com/kaffetorsk/arlo-streamer/actions/workflows/codeql.yml)
+
 # arlo-streamer
 Python script that turns arlo cameras into continuous streams through ffmpeg
 This allow arlo cameras to be used in the NVR of your choosing. (e.g. [Frigate](https://frigate.video/))
