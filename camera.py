@@ -44,7 +44,7 @@ class Camera(object):
         Creates event channel between pyaarlo callbacks and async generator.
         Listens for and passes events to handler.
         """
-        while not self._arlo.is_on:
+        while self._arlo.is_unavailable:
             await asyncio.sleep(5)
         self.event_loop = asyncio.get_running_loop()
         event_get, event_put = self.create_sync_async_channel()
