@@ -24,7 +24,7 @@ MOTION_TIMEOUT: How long to provide active stream after motion (in seconds) (def
 MQTT_BROKER: If specified, will be used to publish snapshots and status, and control the camera (see MQTT).
 MQTT_TOPIC_PICTURE: snapshots will be published to this topic. (default: arlo/picture)
 MQTT_TOPIC_STATUS: status will be published to this topic. (default: arlo/status/{name})
-MQTT_TOPIC_CONTROL: snapshots will be published to this topic. (default: arlo/control/{name})
+MQTT_TOPIC_CONTROL: control will be read on this topic. (default: arlo/control/{name})
 MQTT_RECONNECT_INTERVAL: Wait this amount before retrying connection to broker (in seconds) (default: 5)
 STATUS_INTERVAL: Time between published status messages (in seconds) (default: 120)
 DEBUG: True enables full debug (default: False)
@@ -44,8 +44,9 @@ JSON with "payload" set to base64 encoded image. "filename" set to "timestamp ca
 JSON
 #### Control
 Payload in a simple string.
+```
 "START" and "STOP": Starts and stops active stream
 "SNAPSHOT": Requests snapshot to be taken
-
+```
 ## Notes
 This repo is in early development, treat it as such and feel free to submit PRs.
