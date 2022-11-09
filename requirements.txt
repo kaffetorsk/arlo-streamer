@@ -1,5 +1,4 @@
-# git+https://github.com/twrecked/pyaarlo
-git+https://github.com/kaffetorsk/pyaarlo@go2
+git+https://github.com/twrecked/pyaarlo
 python-decouple
 asyncio-mqtt
 aiostream
