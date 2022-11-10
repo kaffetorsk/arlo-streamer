@@ -19,10 +19,10 @@ class Camera(object):
         interval of status messages from generator (seconds)
     stream: asyncio.subprocess.Process
         current ffmpeg stream (idle or active)
-
     """
+
     # Possible states
-    STATES = ['idle', 'connecting', 'streaming']
+    STATES = ['idle', 'streaming']
 
     def __init__(self, arlo_camera, ffmpeg_out,
                  motion_timeout, status_interval):
@@ -78,9 +78,8 @@ class Camera(object):
         live stream timeout.
         """
         logging.info(f"{self.name} motion: {motion}")
-        if self.get_state() == 'idle':
-            if motion:
-                await self.set_state('connecting')
+        if motion:
+            await self.set_state('streaming')
 
         else:
             if self._timeout_task:
@@ -96,10 +95,10 @@ class Camera(object):
         running stream.
         """
         if state == 'idle':
-            if self.get_state() in ['connecting', 'streaming']:
-                self.request_stream()
+            if self.get_state() == 'streaming':
+                await self._start_stream()
         elif state == 'userStreamActive' and self.get_state() != 'streaming':
-            await self._stream_started()
+            await self.set_state('streaming')
 
     # Set state in accordance to STATES
     async def set_state(self, new_state):
@@ -118,10 +117,9 @@ class Camera(object):
             case 'idle':
                 self.stop_stream()
                 self.stream = await self._start_idle_stream()
-            case 'connecting':
-                self.request_stream()
+
             case 'streaming':
-                pass
+                await self._start_stream()
 
     async def _start_proxy_stream(self):
         """
@@ -149,17 +147,13 @@ class Camera(object):
             )
         return proc
 
-    # Request stream from pyaarlo camera
-    def request_stream(self):
-        self.event_loop.run_in_executor(None, self._arlo.get_stream)
-
-    async def _stream_started(self):
+    async def _start_stream(self):
         """
-        Stream is up, grab it, kill idle stream and start new ffmpeg instance
+        Request stream, grab it, kill idle stream and start new ffmpeg instance
         writing to proxy.
         """
-        await self.set_state('streaming')
-        stream = self._arlo.get_stream()
+        stream = await self.event_loop.run_in_executor(None,
+                                                       self._arlo.get_stream)
         if stream:
             try:
                 self.stream.kill()
@@ -228,8 +222,7 @@ class Camera(object):
         """
         match payload.upper():
             case 'START':
-                if self.get_state() == 'idle':
-                    await self.set_state('connecting')
+                await self.set_state('streaming')
             case 'STOP':
                 await self.set_state('idle')
             case 'SNAPSHOT':
