@@ -74,5 +74,5 @@ async def mqtt_reader(client, cameras):
             await client.subscribe(name)
         async for message in messages:
             if message.topic in cams:
-                await cams[message.topic].mqtt_control(
-                    message.payload.decode("utf-8"))
+                asyncio.create_task(cams[message.topic].mqtt_control(
+                    message.payload.decode("utf-8")))
