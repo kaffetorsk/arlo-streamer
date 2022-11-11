@@ -155,10 +155,7 @@ class Camera(object):
         stream = await self.event_loop.run_in_executor(None,
                                                        self._arlo.get_stream)
         if stream:
-            try:
-                self.stream.kill()
-            except ProcessLookupError:
-                pass
+            self.stop_stream()
 
             self.stream = await asyncio.create_subprocess_exec(
                 *['ffmpeg', '-i', stream, '-c:v', 'copy', '-c:a', 'copy',
