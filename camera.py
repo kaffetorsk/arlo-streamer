@@ -262,6 +262,6 @@ class Camera(object):
         logging.info(f"Shutting down {self.name}")
         for stream in [self.stream, self.proxy_stream]:
             try:
-                stream.signal(signal)
+                stream.terminate()
             except Exception:
                 pass
