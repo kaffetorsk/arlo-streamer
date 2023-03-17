@@ -14,6 +14,7 @@ MQTT_TOPIC_PICTURE = config('MQTT_TOPIC_PICTURE', default='arlo/picture')
 MQTT_TOPIC_CONTROL = config('MQTT_TOPIC_CONTROL',
                             default='arlo/control/{name}')
 MQTT_TOPIC_STATUS = config('MQTT_TOPIC_STATUS', default='arlo/status/{name}')
+MQTT_TOPIC_MOTION = config('MQTT_TOPIC_MOTION', default='arlo/motion/{name}')
 
 
 async def mqtt_client(cameras):
@@ -28,7 +29,8 @@ async def mqtt_client(cameras):
                     # Generators/Readers
                     pic_streamer(client, cameras),
                     mqtt_reader(client, cameras),
-                    device_status(client, cameras)
+                    device_status(client, cameras),
+                    motion_stream(client, cameras)
                     )
         except aiomqtt.MqttError as error:
             logging.info(f'MQTT "{error}". reconnecting.')
@@ -53,7 +55,7 @@ async def pic_streamer(client, cameras):
 
 async def device_status(client, cameras):
     """
-    Merge device statuss from all cameras and publish to MQTT
+    Merge device status from all cameras and publish to MQTT
     """
     statuses = stream.merge(*[c.listen_status() for c in cameras])
     async with statuses.stream() as streamer:
@@ -61,6 +63,19 @@ async def device_status(client, cameras):
             await client.publish(
                 MQTT_TOPIC_STATUS.format(name=name),
                 payload=json.dumps(status)
+                )
+
+
+async def motion_stream(client, cameras):
+    """
+    Merge motion events from all cameras and publish to MQTT
+    """
+    motion_states = stream.merge(*[c.listen_motion() for c in cameras])
+    async with motion_states.stream() as streamer:
+        async for name, motion in streamer:
+            await client.publish(
+                MQTT_TOPIC_MOTION.format(name=name),
+                payload=json.dumps(motion)
                 )
 
 

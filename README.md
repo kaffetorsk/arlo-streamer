@@ -27,6 +27,7 @@ MQTT_BROKER: If specified, will be used to publish snapshots and status, and con
 MQTT_TOPIC_PICTURE: snapshots will be published to this topic. (default: arlo/picture)
 MQTT_TOPIC_STATUS: status will be published to this topic. (default: arlo/status/{name})
 MQTT_TOPIC_CONTROL: control will be read on this topic. (default: arlo/control/{name})
+MQTT_TOPIC_MOTION: motion events will be published to this topic. (default: arlo/motion/{name})
 MQTT_RECONNECT_INTERVAL: Wait this amount before retrying connection to broker (in seconds) (default: 5)
 STATUS_INTERVAL: Time between published status messages (in seconds) (default: 120)
 DEBUG: True enables full debug (default: False)
@@ -44,6 +45,8 @@ docker run -d --env-file .env kaffetorsk/arlo-streamer
 JSON with "payload" set to base64 encoded image. "filename" set to "timestamp camera_name.jpg"
 #### Status
 JSON
+#### Motion
+Boolean
 #### Control
 Payload in a simple string.
 ```

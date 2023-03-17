@@ -32,8 +32,10 @@ class Camera(object):
         self.timeout = motion_timeout
         self._timeout_task = None
         self.status_interval = status_interval
+        self.motion = False
         self._state = None
         self._state_event = asyncio.Event()
+        self._motion_event = asyncio.Event()
         self.stream = None
         self._pictures = asyncio.Queue()
         self._listen_pictures = False
@@ -77,6 +79,8 @@ class Camera(object):
         Handles motion events. Either starts live stream or resets
         live stream timeout.
         """
+        self.motion = motion
+        self._motion_event.set()
         logging.info(f"{self.name} motion: {motion}")
         if motion:
             await self.set_state('streaming')
@@ -212,6 +216,15 @@ class Camera(object):
                 }
             yield self.name, status
             self._state_event.clear()
+
+    async def listen_motion(self):
+        """
+        Async generator, yields motion state on change
+        """
+        while True:
+            await self._motion_event.wait()
+            yield self.name, self.motion
+            self._motion_event.clear()
 
     async def mqtt_control(self, payload):
         """
