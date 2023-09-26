@@ -4,7 +4,6 @@ import asyncio
 import logging
 import signal
 from camera import Camera
-import mqtt
 
 # Read config from ENV
 ARLO_USER = config('ARLO_USER')
@@ -43,6 +42,7 @@ async def main():
 
     # Initialize mqtt service
     if MQTT_BROKER:
+        import mqtt
         asyncio.create_task(mqtt.mqtt_client(cameras))
 
     # Graceful shutdown
