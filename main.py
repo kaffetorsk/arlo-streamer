@@ -29,8 +29,8 @@ async def main():
     # login to arlo with 2FA
     arlo = pyaarlo.PyArlo(
         username=ARLO_USER, password=ARLO_PASS,
-        tfa_source='imap', tfa_type='email',
-        tfa_host=IMAP_HOST, tfa_username=IMAP_USER, tfa_password=IMAP_PASS
+        tfa_source='imap', tfa_type='email', tfa_host=IMAP_HOST,
+        tfa_username=IMAP_USER, tfa_password=IMAP_PASS, backend=sse
         )
 
     # Initialize and start cameras
