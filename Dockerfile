@@ -15,7 +15,7 @@ ENV PYTHONUNBUFFERED=TRUE
 
 COPY eye.png requirements.txt ./
 
-RUN pip3.11 install -r requirements.txt
+RUN pip3.11 install -U --upgrade-strategy eager -r requirements.txt
 
 COPY *.py ./
 
