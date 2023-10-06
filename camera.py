@@ -144,8 +144,8 @@ class Camera(object):
         process handle.
         """
         proc = await asyncio.create_subprocess_exec(
-            *['ffmpeg', '-re', '-loop', '1', '-f', 'image2',
-                '-i', 'eye.png', '-r', '30', '-c:v', 'libx264',
+            *['ffmpeg', '-re', '-stream_loop', '-1',
+                '-i', 'idle.mp4', '-c:v', 'copy',
                 '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
             stdout=self.proxy_writer, stderr=subprocess.DEVNULL
             )
