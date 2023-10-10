@@ -54,7 +54,7 @@ class Camera(object):
         self.event_loop = asyncio.get_running_loop()
         event_get, event_put = self.create_sync_async_channel()
         self._arlo.add_attr_callback('*', event_put)
-        asyncio.create_task(self._start_proxy_stream(self.proxy_reader))
+        asyncio.create_task(self._start_proxy_stream())
         await self.set_state('idle')
         asyncio.create_task(self._periodic_status_trigger())
 
@@ -127,7 +127,7 @@ class Camera(object):
             case 'streaming':
                 await self._start_stream()
 
-    async def _start_proxy_stream(self, reader):
+    async def _start_proxy_stream(self):
         """
         Start proxy stream. This is the continous video
         stream being sent from ffmpeg.
@@ -136,7 +136,7 @@ class Camera(object):
         while exit_code > 0:
             self.proxy_stream = await asyncio.create_subprocess_exec(
                 *(['ffmpeg', '-i', 'pipe:'] + self.ffmpeg_out),
-                stdin=reader, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
+                stdin=self.proxy_reader, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
                 )
             exit_code = await self.proxy_stream.wait()
 
