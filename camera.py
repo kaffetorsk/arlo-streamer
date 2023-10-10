@@ -37,6 +37,8 @@ class Camera(object):
         self._state_event = asyncio.Event()
         self._motion_event = asyncio.Event()
         self.stream = None
+        self.proxy_stream = None
+        self.proxy_reader, self.proxy_writer = os.pipe()
         self._pictures = asyncio.Queue()
         self._listen_pictures = False
         logging.info(f"Camera added: {self.name}")
@@ -52,7 +54,7 @@ class Camera(object):
         self.event_loop = asyncio.get_running_loop()
         event_get, event_put = self.create_sync_async_channel()
         self._arlo.add_attr_callback('*', event_put)
-        self.proxy_stream, self.proxy_writer = await self._start_proxy_stream()
+        asyncio.create_task(self._start_proxy_stream(self.proxy_reader))
         await self.set_state('idle')
         asyncio.create_task(self._periodic_status_trigger())
 
@@ -120,36 +122,52 @@ class Camera(object):
         match new_state:
             case 'idle':
                 self.stop_stream()
-                self.stream = await self._start_idle_stream()
+                asyncio.create_task(self._start_idle_stream())
 
             case 'streaming':
                 await self._start_stream()
 
-    async def _start_proxy_stream(self):
+    async def _start_proxy_stream(self, reader):
         """
         Start proxy stream. This is the continous video
-        stream being sent from ffmpeg. Return process handle
-        and write end of pipe.
+        stream being sent from ffmpeg.
         """
-        read, write = os.pipe()
-        proc = await asyncio.create_subprocess_exec(
-            *(['ffmpeg', '-i', 'pipe:'] + self.ffmpeg_out),
-            stdin=read, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-            )
-        return proc, write
+        exit_code = 1
+        while exit_code > 0:
+            self.proxy_stream = await asyncio.create_subprocess_exec(
+                *(['ffmpeg', '-i', 'pipe:'] + self.ffmpeg_out),
+                stdin=reader, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
+                )
+            exit_code = await self.proxy_stream.wait()
+
+            if exit_code > 0:
+                error_output = await self.proxy_stream.stderr.read()
+                logging.warning(
+                    f"Proxy stream for {self.name} exited unexpectedly "
+                    f"with code {exit_code} due to {error_output.decode('utf-8')}. Restarting..."
+                    )
+                await asyncio.sleep(3)
 
     async def _start_idle_stream(self):
         """
-        Start idle picture, writing to the proxy stream and return
-        process handle.
+        Start idle picture, writing to the proxy stream
         """
-        proc = await asyncio.create_subprocess_exec(
-            *['ffmpeg', '-re', '-stream_loop', '-1',
-                '-i', 'idle.mp4', '-c:v', 'copy',
-                '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
-            stdout=self.proxy_writer, stderr=subprocess.DEVNULL
-            )
-        return proc
+        exit_code = 1
+        while exit_code > 0:
+            self.stream = await asyncio.create_subprocess_exec(
+                *['ffmpeg', '-re', '-stream_loop', '-1',
+                    '-i', 'idle.mp4', '-c:v', 'copy',
+                    '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
+                stdout=self.proxy_writer, stderr=subprocess.DEVNULL
+                )
+            exit_code = await self.stream.wait()
+
+            if exit_code > 0:
+                logging.warning(
+                    f"Idle stream for {self.name} exited unexpectedly "
+                    f"with code {exit_code}. Restarting..."
+                    )
+                await asyncio.sleep(3)
 
     async def _start_stream(self):
         """
