@@ -136,15 +136,14 @@ class Camera(object):
         while exit_code > 0:
             self.proxy_stream = await asyncio.create_subprocess_exec(
                 *(['ffmpeg', '-i', 'pipe:'] + self.ffmpeg_out),
-                stdin=self.proxy_reader, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
+                stdin=self.proxy_reader, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
                 )
             exit_code = await self.proxy_stream.wait()
 
             if exit_code > 0:
-                error_output = await self.proxy_stream.stderr.read()
                 logging.warning(
                     f"Proxy stream for {self.name} exited unexpectedly "
-                    f"with code {exit_code} due to {error_output.decode('utf-8')}. Restarting..."
+                    f"with code {exit_code}. Restarting..."
                     )
                 await asyncio.sleep(3)
 
