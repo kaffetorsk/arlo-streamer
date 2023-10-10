@@ -14,7 +14,6 @@ IMAP_PASS = config('IMAP_PASS')
 MQTT_BROKER = config('MQTT_BROKER', default=None)
 FFMPEG_OUT = config('FFMPEG_OUT')
 MOTION_TIMEOUT = config('MOTION_TIMEOUT', default=60, cast=int)
-ARLO_REFRESH = config('ARLO_REFRESH', default=3600, cast=int)
 STATUS_INTERVAL = config('STATUS_INTERVAL', default=120, cast=int)
 DEBUG = config('DEBUG', default=False, cast=bool)
 
@@ -23,6 +22,8 @@ logging.basicConfig(
     level=logging.DEBUG if DEBUG else logging.INFO,
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
     )
+
+shutdown_event = asyncio.Event()
 
 
 async def main():
@@ -46,28 +47,25 @@ async def main():
         asyncio.create_task(mqtt.mqtt_client(cameras))
 
     # Graceful shutdown
-    def shutdown(signal, frame):
-        logging.info('Shutting down...')
-        for c in cameras:
-            c.shutdown(signal)
-            asyncio.get_running_loop().stop()
+    def request_shutdown(signal, frame):
+        logging.info('Shutdown requested...')
+        shutdown_event.set()
 
     # Register callbacks for shutdown
-    signal.signal(signal.SIGTERM, shutdown)
-    signal.signal(signal.SIGINT, shutdown)
+    signal.signal(signal.SIGTERM, request_shutdown)
+    signal.signal(signal.SIGINT, request_shutdown)
 
-    # Wait for periodic refresh
-    await asyncio.sleep(ARLO_REFRESH)
+    # Wait for shutdown
+    await shutdown_event.wait()
 
-    logging.info('Periodic refresh, restarting...')
+    logging.info('Shutting down...')
     for c in cameras:
-        await c.shutdown_when_idle()
+        c.shutdown(signal)
+
     arlo.stop(logout=True)
 
-
-while True:
-    try:
-        asyncio.run(main())
-    except RuntimeError:
-        logging.info("Closed.")
-        break
+# Run main
+try:
+    asyncio.run(main())
+except RuntimeError:
+    logging.info("Closed.")
