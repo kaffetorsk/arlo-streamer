@@ -30,6 +30,8 @@ MQTT_TOPIC_MOTION: motion events will be published to this topic. (default: arlo
 MQTT_RECONNECT_INTERVAL: Wait this amount before retrying connection to broker (in seconds) (default: 5)
 STATUS_INTERVAL: Time between published status messages (in seconds) (default: 120)
 DEBUG: True enables full debug (default: False)
+PYAARLO_ECDH_CURVE: ecdh Curve used to bypass Cloudflare. (default determined by cloudscraper). Try `secp384r1` if struggling with login.
+PYAARLO_BACKEND: Pyaarlo backend. (default determined by pyaarlo). Options are `mqtt` and `sse`.
 ```
 ### Running
 ```
