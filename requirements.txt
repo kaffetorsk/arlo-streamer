@@ -1,4 +1,4 @@
-git+https://github.com/tyr84/pyaarlo@ecdh_curve
+git+https://github.com/twrecked/pyaarlo
 python-decouple
 asyncio-mqtt
 aiostream
