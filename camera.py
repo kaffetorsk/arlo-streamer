@@ -155,7 +155,7 @@ class Camera(object):
         while exit_code > 0:
             self.stream = await asyncio.create_subprocess_exec(
                 *['ffmpeg', '-re', '-stream_loop', '-1',
-                    '-i', 'idle.mp4', '-c:v', 'copy',
+                    '-i', 'idle.mp4', '-c:v', 'copy', '-c:a', 'copy',
                     '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
                 stdin=subprocess.DEVNULL, stdout=self.proxy_writer, stderr=subprocess.DEVNULL
                 )
