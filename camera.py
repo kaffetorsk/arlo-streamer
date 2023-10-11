@@ -157,7 +157,7 @@ class Camera(object):
                 *['ffmpeg', '-re', '-stream_loop', '-1',
                     '-i', 'idle.mp4', '-c:v', 'copy',
                     '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
-                stdout=self.proxy_writer, stderr=subprocess.DEVNULL
+                stdin=subprocess.DEVNULL, stdout=self.proxy_writer, stderr=subprocess.DEVNULL
                 )
             exit_code = await self.stream.wait()
 
@@ -181,7 +181,7 @@ class Camera(object):
             self.stream = await asyncio.create_subprocess_exec(
                 *['ffmpeg', '-i', stream, '-c:v', 'copy', '-c:a', 'copy',
                     '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
-                stdout=self.proxy_writer, stderr=subprocess.DEVNULL
+                stdin=subprocess.DEVNULL, stdout=self.proxy_writer, stderr=subprocess.DEVNULL
                 )
 
     async def _stream_timeout(self):
