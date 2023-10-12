@@ -72,13 +72,11 @@ class Base(object):
 
         try:
             payload = json.loads(payload)
-            print(payload)
             for k, v in payload.items():
                 if k in handlers:
-                    print((k, v))
                     self.event_loop.run_in_executor(None, handlers[k], v)
-        except Exception as e:
-            print(e)
+        except Exception:
+            logging.warning("Invalid data for MQTT control")
 
     def set_mode(self, mode):
         """"
