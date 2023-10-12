@@ -60,8 +60,9 @@ JSON payload, all keys are optional.
 ```
 {
     "mode": name of mode,
-    "siren": "on"/"off"/{"duration": X, "volume": x}
+    "siren": "on"/"off"/{"duration": X seconds, "volume": 1-8}
 }
 ```
+Note: `"siren": "on"` defaults to 300 seconds, volume 8
 ## Notes
 This repo is in early development, treat it as such and feel free to submit PRs.
