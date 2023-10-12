@@ -27,7 +27,7 @@ class Camera(object):
     def __init__(self, arlo_camera, ffmpeg_out,
                  motion_timeout, status_interval):
         self._arlo = arlo_camera
-        self.name = self._arlo.name.replace(" ", "_")
+        self.name = self._arlo.name.replace(" ", "_").lower()
         self.ffmpeg_out = shlex.split(ffmpeg_out.format(name=self.name))
         self.timeout = motion_timeout
         self._timeout_task = None

@@ -15,7 +15,7 @@ class Base(object):
 
     def __init__(self, arlo_base, status_interval):
         self._arlo = arlo_base
-        self.name = self._arlo.name.replace(" ", "_")
+        self.name = self._arlo.name.replace(" ", "_").lower()
         self.status_interval = status_interval
         self._state_event = asyncio.Event()
         logging.info(f"Base added: {self.name}")
