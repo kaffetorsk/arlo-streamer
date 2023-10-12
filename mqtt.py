@@ -17,7 +17,7 @@ MQTT_TOPIC_STATUS = config('MQTT_TOPIC_STATUS', default='arlo/status/{name}')
 MQTT_TOPIC_MOTION = config('MQTT_TOPIC_MOTION', default='arlo/motion/{name}')
 
 
-async def mqtt_client(cameras):
+async def mqtt_client(cameras, bases):
     """
     Async mqtt client, initiaties various generators and readers
     """
@@ -27,10 +27,10 @@ async def mqtt_client(cameras):
                 logging.info(f"MQTT client connected to {MQTT_BROKER}")
                 await asyncio.gather(
                     # Generators/Readers
-                    pic_streamer(client, cameras),
-                    mqtt_reader(client, cameras),
-                    device_status(client, cameras),
-                    motion_stream(client, cameras)
+                    mqtt_reader(client, cameras + bases),
+                    device_status(client, cameras + bases),
+                    motion_stream(client, cameras),
+                    pic_streamer(client, cameras)
                     )
         except aiomqtt.MqttError as error:
             logging.info(f'MQTT "{error}". reconnecting.')
@@ -53,11 +53,11 @@ async def pic_streamer(client, cameras):
                     }))
 
 
-async def device_status(client, cameras):
+async def device_status(client, devices):
     """
-    Merge device status from all cameras and publish to MQTT
+    Merge device status from all devices and publish to MQTT
     """
-    statuses = stream.merge(*[c.listen_status() for c in cameras])
+    statuses = stream.merge(*[d.listen_status() for d in devices])
     async with statuses.stream() as streamer:
         async for name, status in streamer:
             await client.publish(
@@ -79,15 +79,15 @@ async def motion_stream(client, cameras):
                 )
 
 
-async def mqtt_reader(client, cameras):
+async def mqtt_reader(client, devices):
     """
     Subscribe to control topics, and pass messages to individual cameras
     """
-    cams = {MQTT_TOPIC_CONTROL.format(name=c.name): c for c in cameras}
+    devs = {MQTT_TOPIC_CONTROL.format(name=d.name): d for d in devices}
     async with client.unfiltered_messages() as messages:
-        for name, _ in cams.items():
+        for name, _ in devs.items():
             await client.subscribe(name)
         async for message in messages:
-            if message.topic in cams:
-                asyncio.create_task(cams[message.topic].mqtt_control(
+            if message.topic in devs:
+                asyncio.create_task(devs[message.topic].mqtt_control(
                     message.payload.decode("utf-8")))

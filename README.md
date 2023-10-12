@@ -49,10 +49,19 @@ JSON
 #### Motion
 Boolean
 #### Control
+##### Cameras
 Payload in a simple string.
 ```
 "START" and "STOP": Starts and stops active stream
 "SNAPSHOT": Requests snapshot to be taken
+```
+##### Base Stations
+JSON payload, all keys are optional.
+```
+{
+    "mode": name of mode,
+    "siren": "on"/"off"/{"duration": X, "volume": x}
+}
 ```
 ## Notes
 This repo is in early development, treat it as such and feel free to submit PRs.

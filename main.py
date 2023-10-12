@@ -4,6 +4,7 @@ import asyncio
 import logging
 import signal
 from camera import Camera
+from base import Base
 
 # Read config from ENV
 ARLO_USER = config('ARLO_USER')
@@ -48,17 +49,21 @@ async def main():
 
     arlo = pyaarlo.PyArlo(**arlo_args)
 
-    # Initialize and start cameras
+    # Initialize bases
+    bases = [Base(b, STATUS_INTERVAL) for b in arlo.base_stations]
+
+    # Initialize cameras
     cameras = [Camera(
         c, FFMPEG_OUT, MOTION_TIMEOUT, STATUS_INTERVAL
         ) for c in arlo.cameras]
 
-    [asyncio.create_task(c.run()) for c in cameras]
+    # Start both
+    [asyncio.create_task(d.run()) for d in cameras + bases]
 
     # Initialize mqtt service
     if MQTT_BROKER:
         import mqtt
-        asyncio.create_task(mqtt.mqtt_client(cameras))
+        asyncio.create_task(mqtt.mqtt_client(cameras, bases))
 
     # Graceful shutdown
     def request_shutdown(signal, frame):
