@@ -3,9 +3,10 @@ import logging
 import asyncio
 import shlex
 import os
+from device import Device
 
 
-class Camera(object):
+class Camera(Device):
     """
     Attributes
     ----------
@@ -26,15 +27,12 @@ class Camera(object):
 
     def __init__(self, arlo_camera, ffmpeg_out,
                  motion_timeout, status_interval):
-        self._arlo = arlo_camera
-        self.name = self._arlo.name.replace(" ", "_").lower()
+        super().__init__(arlo_camera, status_interval)
         self.ffmpeg_out = shlex.split(ffmpeg_out.format(name=self.name))
         self.timeout = motion_timeout
         self._timeout_task = None
-        self.status_interval = status_interval
         self.motion = False
         self._state = None
-        self._state_event = asyncio.Event()
         self._motion_event = asyncio.Event()
         self.stream = None
         self.proxy_stream = None
@@ -51,16 +49,9 @@ class Camera(object):
         """
         while self._arlo.is_unavailable:
             await asyncio.sleep(5)
-        self.event_loop = asyncio.get_running_loop()
-        event_get, event_put = self.create_sync_async_channel()
-        self._arlo.add_attr_callback('*', event_put)
-        asyncio.create_task(self._start_proxy_stream())
         await self.set_state('idle')
-        asyncio.create_task(self._periodic_status_trigger())
-
-        async for device, attr, value in event_get:
-            if device == self._arlo:
-                asyncio.create_task(self.on_event(attr, value))
+        asyncio.create_task(self._start_proxy_stream())
+        await super().run()
 
     # Distributes events to correct handler
     async def on_event(self, attr, value):
@@ -216,23 +207,11 @@ class Camera(object):
         except asyncio.QueueFull:
             logging.info("picture queue full, ignoring")
 
-    async def _periodic_status_trigger(self):
-        while True:
-            self._state_event.set()
-            await asyncio.sleep(self.status_interval)
-
-    async def listen_status(self):
-        """
-        Async generator, periodically yields status messages for mqtt
-        """
-        while True:
-            await self._state_event.wait()
-            status = {
-                "battery": self._arlo.battery_level,
-                "state": self.get_state()
-                }
-            yield self.name, status
-            self._state_event.clear()
+    def get_status(self):
+        return {
+            "battery": self._arlo.battery_level,
+            "state": self.get_state()
+            }
 
     async def listen_motion(self):
         """
@@ -255,25 +234,6 @@ class Camera(object):
             case 'SNAPSHOT':
                 await self.event_loop.run_in_executor(
                         None, self._arlo.request_snapshot)
-
-    def create_sync_async_channel(self):
-        """
-        Sync/Async channel
-
-            Returns:
-                get(): async generator, yields queued data
-                put: function used in sync callbacks
-        """
-        queue = asyncio.Queue()
-
-        def put(*args):
-            self.event_loop.call_soon_threadsafe(queue.put_nowait, args)
-
-        async def get():
-            while True:
-                yield await queue.get()
-                queue.task_done()
-        return get(), put
 
     async def shutdown_when_idle(self):
         """
