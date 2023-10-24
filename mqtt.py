@@ -1,6 +1,6 @@
 import base64 as b64
 import json
-import asyncio_mqtt as aiomqtt
+import aiomqtt
 from aiostream import stream
 import logging
 from decouple import config
@@ -84,10 +84,10 @@ async def mqtt_reader(client, devices):
     Subscribe to control topics, and pass messages to individual cameras
     """
     devs = {MQTT_TOPIC_CONTROL.format(name=d.name): d for d in devices}
-    async with client.unfiltered_messages() as messages:
+    async with client.messages() as messages:
         for name, _ in devs.items():
             await client.subscribe(name)
         async for message in messages:
-            if message.topic in devs:
-                asyncio.create_task(devs[message.topic].mqtt_control(
+            if message.topic.value in devs:
+                asyncio.create_task(devs[message.topic.value].mqtt_control(
                     message.payload.decode("utf-8")))
