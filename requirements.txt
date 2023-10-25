@@ -1,4 +1,4 @@
-git+https://github.com/twrecked/pyaarlo
+git+https://github.com/tyr84/pyaarlo@ecdh_curve2
 python-decouple
 aiomqtt
 aiostream
