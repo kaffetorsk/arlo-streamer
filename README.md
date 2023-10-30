@@ -1,4 +1,4 @@
-[![Dependency Review](https://github.com/kaffetorsk/arlo-streamer/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/kaffetorsk/arlo-streamer/actions/workflows/dependency-review.yml) [![CodeQL](https://github.com/kaffetorsk/arlo-streamer/actions/workflows/codeql.yml/badge.svg)](https://github.com/kaffetorsk/arlo-streamer/actions/workflows/codeql.yml)
+[![CodeQL](https://github.com/kaffetorsk/arlo-streamer/actions/workflows/codeql.yml/badge.svg)](https://github.com/kaffetorsk/arlo-streamer/actions/workflows/codeql.yml)
 
 # arlo-streamer
 Python script that turns arlo cameras into continuous streams through ffmpeg
@@ -6,6 +6,8 @@ This allow arlo cameras to be used in the NVR of your choosing. (e.g. [Frigate](
 
 The streams will provide an "idle" picture when the camera is not actively streaming.
 Motion will trigger an active stream, replacing the "idle" picture with the actual camera stream.
+
+**Note:** For ideal operation, the arlo cameras should not be set to record on motion in the arlo app. This slows down stream setup significantly, leading to loss of valuable frames at the start of the event. A common approach is to choose push notification only, then disable notifications for the arlo app.
 
 ## Usage
 Config through environment variables, if `.env` is present it will be checked for variables.
