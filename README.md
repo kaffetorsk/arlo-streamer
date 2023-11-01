@@ -10,6 +10,8 @@ Motion will trigger an active stream, replacing the "idle" picture with the actu
 **Note:** For ideal operation, the arlo cameras should not be set to record on motion in the arlo app. This slows down stream setup significantly, leading to loss of valuable frames at the start of the event. A common approach is to choose push notification only, then disable notifications for the arlo app.
 
 ## Usage
+For frigate, see this [example](examples/frigate/README.md)
+
 Config through environment variables, if `.env` is present it will be checked for variables.
 Where applicable `{name}` will be replaced by camera name.
 ### Required

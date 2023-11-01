@@ -1,0 +1,18 @@
+services:
+  arlo-streamer:
+    image: kaffetorsk/arlo-streamer
+    restart: unless-stopped
+    env_file: .streamer-env
+    extra_hosts:
+     - "host.docker.internal:host-gateway" # For reaching local mqtt
+
+  rtmp-server:
+    image: alqutami/rtmp-hls
+    restart: unless-stopped
+    volumes:
+      - ./config/rtmp/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - 1935:1935
+    environment:
+      - MTX_PROTOCOLS=tcp
+

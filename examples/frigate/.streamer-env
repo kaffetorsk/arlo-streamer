@@ -1,0 +1,8 @@
+ARLO_USER=XXXXXXXXX
+ARLO_PASS=XXXXXXXXX
+IMAP_HOST=XXXXXXXXX
+IMAP_USER=XXXXXXXXX
+IMAP_PASS=XXXXXXXXX
+FFMPEG_OUT="-c:v copy -c:a copy -f flv rtmp://rtmp-server:1935/live/{name}"
+MQTT_BROKER=host.docker.internal
+PYAARLO_BACKEND=sse
