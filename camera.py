@@ -127,7 +127,9 @@ class Camera(Device):
         while exit_code > 0:
             self.proxy_stream = await asyncio.create_subprocess_exec(
                 *(['ffmpeg', '-i', 'pipe:'] + self.ffmpeg_out),
-                stdin=self.proxy_reader, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                stdin=self.proxy_reader,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
                 )
             exit_code = await self.proxy_stream.wait()
 
@@ -145,10 +147,13 @@ class Camera(Device):
         exit_code = 1
         while exit_code > 0:
             self.stream = await asyncio.create_subprocess_exec(
-                *['ffmpeg', '-re', '-stream_loop', '-1',
-                    '-i', 'idle.mp4', '-c:v', 'copy', '-c:a', 'copy',
-                    '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
-                stdin=subprocess.DEVNULL, stdout=self.proxy_writer, stderr=subprocess.DEVNULL
+                *['ffmpeg', '-re', '-stream_loop', '-1', '-i', 'idle.mp4',
+                  '-c:v', 'copy',
+                  '-c:a', 'libmp3lame', '-ar', '44100',
+                  '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
+                stdin=subprocess.DEVNULL,
+                stdout=self.proxy_writer,
+                stderr=subprocess.DEVNULL
                 )
             exit_code = await self.stream.wait()
 
@@ -170,9 +175,12 @@ class Camera(Device):
             self.stop_stream()
 
             self.stream = await asyncio.create_subprocess_exec(
-                *['ffmpeg', '-i', stream, '-c:v', 'copy', '-c:a', 'copy',
-                    '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
-                stdin=subprocess.DEVNULL, stdout=self.proxy_writer, stderr=subprocess.DEVNULL
+                *['ffmpeg', '-i', stream, '-c:v', 'copy',
+                  '-c:a', 'libmp3lame', '-ar', '44100',
+                  '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
+                stdin=subprocess.DEVNULL,
+                stdout=self.proxy_writer,
+                stderr=subprocess.DEVNULL
                 )
 
     async def _stream_timeout(self):
