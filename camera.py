@@ -4,6 +4,9 @@ import asyncio
 import shlex
 import os
 from device import Device
+from decouple import config
+
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 
 class Camera(Device):
@@ -129,8 +132,14 @@ class Camera(Device):
                 *(['ffmpeg', '-i', 'pipe:'] + self.ffmpeg_out),
                 stdin=self.proxy_reader,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.PIPE if DEBUG else subprocess.DEVNULL
                 )
+
+            if DEBUG:
+                asyncio.create_task(
+                    self._log_stderr(self.proxy_stream, 'proxy_stream')
+                    )
+
             exit_code = await self.proxy_stream.wait()
 
             if exit_code > 0:
@@ -153,8 +162,14 @@ class Camera(Device):
                   '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
                 stdin=subprocess.DEVNULL,
                 stdout=self.proxy_writer,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.PIPE if DEBUG else subprocess.DEVNULL
                 )
+
+            if DEBUG:
+                asyncio.create_task(
+                    self._log_stderr(self.stream, 'idle_stream')
+                    )
+
             exit_code = await self.stream.wait()
 
             if exit_code > 0:
@@ -180,8 +195,13 @@ class Camera(Device):
                   '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
                 stdin=subprocess.DEVNULL,
                 stdout=self.proxy_writer,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.PIPE if DEBUG else subprocess.DEVNULL
                 )
+
+            if DEBUG:
+                asyncio.create_task(
+                    self._log_stderr(self.stream, 'live_stream')
+                    )
 
     async def _stream_timeout(self):
         await asyncio.sleep(self.timeout)
@@ -242,6 +262,19 @@ class Camera(Device):
             case 'SNAPSHOT':
                 await self.event_loop.run_in_executor(
                         None, self._arlo.request_snapshot)
+
+    async def _log_stderr(self, stream, label):
+        """
+        Continuously read from stderr and log the output.
+        """
+        while True:
+            line = await stream.stderr.readline()
+            if line:
+                logging.debug(
+                    f"{self.name} - {label}: {line.decode().strip()}"
+                    )
+            else:
+                break
 
     async def shutdown_when_idle(self):
         """
