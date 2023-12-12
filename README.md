@@ -34,8 +34,9 @@ MQTT_TOPIC_MOTION: motion events will be published to this topic. (default: arlo
 MQTT_RECONNECT_INTERVAL: Wait this amount before retrying connection to broker (in seconds) (default: 5)
 STATUS_INTERVAL: Time between published status messages (in seconds) (default: 120)
 DEBUG: True enables full debug (default: False)
-PYAARLO_ECDH_CURVE: ecdh Curve used to bypass Cloudflare. (default determined by cloudscraper). Try `secp384r1` if struggling with login.
 PYAARLO_BACKEND: Pyaarlo backend. (default determined by pyaarlo). Options are `mqtt` and `sse`.
+PYAARLO_REFRESH_DEVICES: Pyaarlo backend device refresh interval (in hours) (default: never)
+PYAARLO_STREAM_TIMEOUT: Pyaarlo backend event stream timeout (in seconds) (default: never)
 ```
 ### Running
 ```
@@ -68,5 +69,19 @@ JSON payload, all keys are optional.
 }
 ```
 Note: `"siren": "on"` defaults to 300 seconds, volume 8
+## Troubleshooting
+### socket.gaierror: [Errno -2] Name or service not known
+Most likely due to Arlo backend MQTT event stream not working.
+Try:
+```
+PYAARLO_BACKEND=sse
+```
+### Motion trigger stops after a while
+Try:
+```
+PYAARLO_REFRESH_DEVICES=3
+PYAARLO_STREAM_TIMEOUT=180
+```
+See [Pyaarlo readme](https://github.com/twrecked/pyaarlo/tree/master#limitations) for more info
 ## Notes
 This repo is in early development, treat it as such and feel free to submit PRs.
