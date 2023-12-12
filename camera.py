@@ -268,13 +268,16 @@ class Camera(Device):
         Continuously read from stderr and log the output.
         """
         while True:
-            line = await stream.stderr.readline()
-            if line:
-                logging.debug(
-                    f"{self.name} - {label}: {line.decode().strip()}"
-                    )
-            else:
-                break
+            try:
+                line = await stream.stderr.readline()
+                if line:
+                    logging.debug(
+                        f"{self.name} - {label}: {line.decode().strip()}"
+                        )
+                else:
+                    break
+            except ValueError:
+                pass
 
     async def shutdown_when_idle(self):
         """
