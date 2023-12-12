@@ -6,3 +6,5 @@ IMAP_PASS=XXXXXXXXX
 FFMPEG_OUT="-c:v copy -c:a copy -f flv rtmp://rtmp-server:1935/live/{name}"
 MQTT_BROKER=host.docker.internal
 PYAARLO_BACKEND=sse
+PYAARLO_REFRESH_DEVICES=3
+PYAARLO_STREAM_TIMEOUT=180
