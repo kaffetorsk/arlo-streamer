@@ -18,9 +18,9 @@ MOTION_TIMEOUT = config('MOTION_TIMEOUT', default=60, cast=int)
 STATUS_INTERVAL = config('STATUS_INTERVAL', default=120, cast=int)
 DEBUG = config('DEBUG', default=False, cast=bool)
 PYAARLO_BACKEND = config('PYAARLO_BACKEND', default=None)
-PYAARLO_REFRESH_DEVICES = config('PYAARLO_REFRESH_DEVICES', default=0, cast=int
-                                 )
+PYAARLO_REFRESH_DEVICES = config('PYAARLO_REFRESH_DEVICES', default=0, cast=int)
 PYAARLO_STREAM_TIMEOUT = config('PYAARLO_STREAM_TIMEOUT', default=0, cast=int)
+PYAARLO_STORAGE_DIR = config('PYAARLO_STORAGE_DIR', default=None)
 
 # Initialize logging
 logging.basicConfig(
@@ -51,6 +51,9 @@ async def main():
 
     if PYAARLO_BACKEND:
         arlo_args['backend'] = PYAARLO_BACKEND
+
+    if PYAARLO_STORAGE_DIR:
+        arlo_args['storage_dir'] = PYAARLO_STORAGE_DIR
 
     arlo = pyaarlo.PyArlo(**arlo_args)
 

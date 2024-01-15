@@ -7,7 +7,10 @@ from decouple import config
 import asyncio
 import time
 
+DEBUG = config('DEBUG', default=False, cast=bool)
 MQTT_BROKER = config('MQTT_BROKER')
+MQTT_USERNAME = config('MQTT_USERNAME', default=None)
+MQTT_PASSWORD = config('MQTT_PASSWORD', default=None)
 MQTT_RECONNECT_INTERVAL = config('MQTT_RECONNECT_INTERVAL', default=5)
 MQTT_TOPIC_PICTURE = config('MQTT_TOPIC_PICTURE', default='arlo/picture')
 # MQTT_TOPIC_LOCATION = config('MQTT_TOPIC_LOCATION', default='arlo/location')
@@ -16,6 +19,10 @@ MQTT_TOPIC_CONTROL = config('MQTT_TOPIC_CONTROL',
 MQTT_TOPIC_STATUS = config('MQTT_TOPIC_STATUS', default='arlo/status/{name}')
 MQTT_TOPIC_MOTION = config('MQTT_TOPIC_MOTION', default='arlo/motion/{name}')
 
+logging.basicConfig(
+    level=logging.DEBUG if DEBUG else logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+)
 
 async def mqtt_client(cameras, bases):
     """
@@ -23,7 +30,7 @@ async def mqtt_client(cameras, bases):
     """
     while True:
         try:
-            async with aiomqtt.Client(MQTT_BROKER) as client:
+            async with aiomqtt.Client(MQTT_BROKER, username=MQTT_USERNAME, password=MQTT_PASSWORD) as client:
                 logging.info(f"MQTT client connected to {MQTT_BROKER}")
                 await asyncio.gather(
                     # Generators/Readers
