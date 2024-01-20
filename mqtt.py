@@ -8,6 +8,9 @@ import asyncio
 import time
 
 MQTT_BROKER = config('MQTT_BROKER')
+MQTT_USER = config('MQTT_USER', default=None)
+MQTT_PASS = config('MQTT_PASS', default=None)
+MQTT_PORT = config('MQTT_PORT', cast=int, default=1883)
 MQTT_RECONNECT_INTERVAL = config('MQTT_RECONNECT_INTERVAL', default=5)
 MQTT_TOPIC_PICTURE = config('MQTT_TOPIC_PICTURE', default='arlo/picture')
 # MQTT_TOPIC_LOCATION = config('MQTT_TOPIC_LOCATION', default='arlo/location')
@@ -23,7 +26,10 @@ async def mqtt_client(cameras, bases):
     """
     while True:
         try:
-            async with aiomqtt.Client(MQTT_BROKER) as client:
+            async with aiomqtt.Client(
+                hostname=MQTT_BROKER, port=MQTT_PORT, username=MQTT_USER,
+                password=MQTT_PASS
+            ) as client:
                 logging.info(f"MQTT client connected to {MQTT_BROKER}")
                 await asyncio.gather(
                     # Generators/Readers

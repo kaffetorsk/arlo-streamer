@@ -27,6 +27,9 @@ FFMPEG_OUT: out-string for ffmpeg. (e.g. -c:v copy -c:a copy -f flv rtmp://127.0
 ```
 MOTION_TIMEOUT: How long to provide active stream after motion (in seconds) (default: 60)
 MQTT_BROKER: If specified, will be used to publish snapshots and status, and control the camera (see MQTT).
+MQTT_PORT: broker port (default: 1883)
+MQTT_USER: broker username (default: None)
+MQTT_PASS: broker password (default: None)
 MQTT_TOPIC_PICTURE: snapshots will be published to this topic. (default: arlo/picture)
 MQTT_TOPIC_STATUS: status will be published to this topic. (default: arlo/status/{name})
 MQTT_TOPIC_CONTROL: control will be read on this topic. (default: arlo/control/{name})
