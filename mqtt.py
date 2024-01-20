@@ -9,6 +9,7 @@ import time
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 MQTT_BROKER = config('MQTT_BROKER')
+MQTT_PORT = config('MQTT_PORT', cast=int, default=1883)
 MQTT_USER = config('MQTT_USER', default=None)
 MQTT_PASS = config('MQTT_PASS', default=None)
 MQTT_RECONNECT_INTERVAL = config('MQTT_RECONNECT_INTERVAL', default=5)
@@ -24,6 +25,7 @@ logging.basicConfig(
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
 )
 
+
 async def mqtt_client(cameras, bases):
     """
     Async mqtt client, initiaties various generators and readers
@@ -32,6 +34,7 @@ async def mqtt_client(cameras, bases):
         try:
             async with aiomqtt.Client(
                 hostname=MQTT_BROKER,
+                port=MQTT_PORT,
                 username=MQTT_USER,
                 password=MQTT_PASS
             ) as client:
