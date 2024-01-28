@@ -18,8 +18,7 @@ services:
     image : tiangolo/nginx-rtmp
     restart: unless-stopped
     volumes:
-      - ./config/rtmp/nginx.conf:/etc/nginx/nginx.conf # You can use simple_nginx.conf as you prefer. If you'll do that, comment the 3 next lines.
-      - ./players:/usr/local/nginx/html/players # for html HLS, RTMP and DASH HTML players 
+      - ./config/rtmp/nginx.conf:/etc/nginx/nginx.conf # You can use simple_nginx.conf as you prefer. If you'll do that, comment the 2 next lines.
       - ./config/rtmp/stat.xsl:/usr/local/nginx/html/stat.xsl
       - ./fragments:/mnt/fragments # for persisting hls/dash fragments
     network_mode: host

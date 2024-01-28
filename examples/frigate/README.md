@@ -27,7 +27,7 @@ Example frigate config:
 go2rtc:
   streams:
     outdoor-cam:
-      - http://host.docker.internal:8090/hls/outdoor-cam
+      - http://host.docker.internal:8090/hls/outdoor-cam.m3u8 
 cameras:
   camera_name:
     ffmpeg:
@@ -47,4 +47,4 @@ __Note__: The default RTMP port should be 1935 but if you use it with Frigate, F
 
 Good luck!
 
-Credits: https://github.com/TareqAlqutami/rtmp-hls-server for the players and the full nginx config file, and https://github.com/tiangolo/nginx-rtmp-docker for the docker image.
+Credits: https://github.com/TareqAlqutami/rtmp-hls-server for the players and the full nginx config file (He explains all your needs about HLS/DASH usage), and https://github.com/tiangolo/nginx-rtmp-docker for the docker image.
