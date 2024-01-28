@@ -1,18 +1,30 @@
 services:
   arlo-streamer:
+    hostname: arlo-streamer
+    container_name: arlo-streamer
     image: kaffetorsk/arlo-streamer
-    restart: unless-stopped
     env_file: .streamer-env
     extra_hosts:
      - "host.docker.internal:host-gateway" # For reaching local mqtt
-
+    privileged: false
+    network_mode: host
+    restart: unless-stopped
+    # if you want to persist arlo's session and cookies, uncomment the volume lines
+    # volumes:
+    #  - ./session:/tmp/.aarlo
   rtmp-server:
-    image: alqutami/rtmp-hls
+    hostname: rtmp-server
+    container_name: rtmp-server
+    image : tiangolo/nginx-rtmp
     restart: unless-stopped
     volumes:
-      - ./config/rtmp/nginx.conf:/etc/nginx/nginx.conf
-    ports:
-      - 1935:1935
+      - ./config/rtmp/nginx.conf:/etc/nginx/nginx.conf # You can use simple_nginx.conf as you prefer. If you'll do that, comment the 3 next lines.
+      - ./players:/usr/local/nginx/html/players # for html HLS, RTMP and DASH HTML players 
+      - ./config/rtmp/stat.xsl:/usr/local/nginx/html/stat.xsl
+      - ./fragments:/mnt/fragments # for persisting hls/dash fragments
+    network_mode: host
+    # If you want to not use host network mode, comment the network_mode line and uncomment the ports line
+    # ports:
+    #  - 1933:1933
     environment:
       - MTX_PROTOCOLS=tcp
-

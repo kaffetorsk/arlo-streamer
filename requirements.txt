@@ -1,4 +1,5 @@
 git+https://github.com/twrecked/pyaarlo
+# git+https://github.com/YpNo/pyaarlo.git@feature/optimizing_cloudflare_undetection
 python-decouple
 aiomqtt==1.2.1
 aiostream

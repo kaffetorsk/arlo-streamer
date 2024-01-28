@@ -1,4 +1,4 @@
-FROM jrottenberg/ffmpeg:4.3-ubuntu
+FROM jrottenberg/ffmpeg:6.1-ubuntu
 
 # Install python 3.11
 RUN apt-get update
