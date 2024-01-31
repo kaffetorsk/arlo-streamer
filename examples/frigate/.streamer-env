@@ -4,7 +4,6 @@ IMAP_HOST=XXXXXXXXX
 IMAP_USER=XXXXXXXXX
 IMAP_PASS=XXXXXXXXX
 FFMPEG_OUT="-c:v copy -c:a copy -f flv rtmp://rtmp-server:1933/live/{name}"
-# FFMPEG_OUT="-c:v libx264 -pix_fmt yuv420p -framerate 15 -g 30 -b:v 2500k -c:a aac -b:a 128k -ar 44100 -ac 2 -preset ultrafast -tune zerolatency -f flv rtmp://host.docker.internal:1933/live/{name}"
 MQTT_BROKER=host.docker.internal
 # MQTT_USER=mqtt
 # MQTT_PASS=mqtt
