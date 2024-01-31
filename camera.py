@@ -157,8 +157,8 @@ class Camera(Device):
         while exit_code > 0:
             self.stream = await asyncio.create_subprocess_exec(
                 *['ffmpeg', '-re', '-stream_loop', '-1', '-i', 'idle.mp4',
-                  '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-framerate', '15', '-g', '30',
-                  '-b:v', '2500k', '-c:a', 'aac', '-ar', '44100', '-b:a', '8k',
+                  '-c:v', 'copy', '-framerate', '15', '-g', '30',
+                  '-c:a', 'aac', '-ar', '44100', '-b:a', '8k',
                   '-f', 'mpegts', 'pipe:'],
                 stdin=subprocess.DEVNULL,
                 stdout=self.proxy_writer,
@@ -191,9 +191,9 @@ class Camera(Device):
 
             self.stream = await asyncio.create_subprocess_exec(
                 *['ffmpeg', '-i', stream,
-                  '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-framerate', '15', '-g', '30',
-                  '-b:v', '2500k', '-c:a', 'aac', '-ar', '44100', '-b:a', '128k', '-ac', '2',
-                  '-preset', 'ultrafast', '-tune', 'zerolatency', '-f', 'mpegts', 'pipe:'],
+                  '-c:v', 'copy', '-framerate', '15', '-g', '30',
+                  '-c:a', 'aac', '-ar', '44100', '-b:a', '8k', '-ac', '2',
+                  '-f', 'mpegts', 'pipe:'],
                 stdin=subprocess.DEVNULL,
                 stdout=self.proxy_writer,
                 stderr=subprocess.PIPE if DEBUG else subprocess.DEVNULL
