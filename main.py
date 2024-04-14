@@ -21,6 +21,7 @@ PYAARLO_BACKEND = config('PYAARLO_BACKEND', default=None)
 PYAARLO_REFRESH_DEVICES = config('PYAARLO_REFRESH_DEVICES', default=0, cast=int)
 PYAARLO_STREAM_TIMEOUT = config('PYAARLO_STREAM_TIMEOUT', default=0, cast=int)
 PYAARLO_STORAGE_DIR = config('PYAARLO_STORAGE_DIR', default=None)
+PYAARLO_ECDH_CURVE = config('PYAARLO_ECDH_CURVE', default=None)
 
 # Initialize logging
 logging.basicConfig(
@@ -54,6 +55,9 @@ async def main():
 
     if PYAARLO_STORAGE_DIR:
         arlo_args['storage_dir'] = PYAARLO_STORAGE_DIR
+
+    if PYAARLO_ECDH_CURVE:
+        arlo_args['ecdh_curve'] = PYAARLO_ECDH_CURVE
 
     arlo = pyaarlo.PyArlo(**arlo_args)
 
