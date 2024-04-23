@@ -158,7 +158,7 @@ class Camera(Device):
             self.stream = await asyncio.create_subprocess_exec(
                 *['ffmpeg', '-re', '-stream_loop', '-1', '-i', 'idle.mp4',
                   '-c:v', 'copy',
-                  '-c:a', 'aac', '-ar', '44100', '-b:a', '8k',
+                  '-c:a', 'libmp3lame', '-ar', '44100', '-b:a', '8k',
                   '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
                 stdin=subprocess.DEVNULL,
                 stdout=self.proxy_writer,
@@ -191,7 +191,7 @@ class Camera(Device):
 
             self.stream = await asyncio.create_subprocess_exec(
                 *['ffmpeg', '-i', stream, '-c:v', 'copy',
-                  '-c:a', 'aac', '-ar', '44100',
+                  '-c:a', 'libmp3lame', '-ar', '44100',
                   '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
                 stdin=subprocess.DEVNULL,
                 stdout=self.proxy_writer,
