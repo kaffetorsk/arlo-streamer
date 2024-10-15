@@ -155,44 +155,47 @@ class Camera(Device):
         Start idle picture, writing to the proxy stream
         """
         exit_code = 1
-        idle_stream_command = ['ffmpeg', '-re', '-stream_loop', '-1', '-i', 'idle.mp4',
+        idle_stream_command = [
+                    'ffmpeg', '-re', '-stream_loop', '-1', '-i', 'idle.mp4',
                     '-c:v', 'copy',
                     '-c:a', 'libmp3lame', '-ar', '44100', '-b:a', '8k',
-                    '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:']
-        
+                    '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'
+                    ]
+
         image_path = "/tmp/{}.jpg".format(self.name)
         last_image = http_get(self._arlo.last_image, filename=image_path)
-        
+
         # Using last camera's thumbnail as idle stream if exists
         if last_image:
             logging.debug(
                 f"Last image found for {self.name}, setting as idle"
             )
-            # Converting last_image to a video for loop_stream (less CPU consumsion)
+            # Converting last_image to a video for loop_stream (less CPU usage)
             convert = await asyncio.create_subprocess_exec(
                 *['ffmpeg', '-y',
                   '-framerate', '1',
                   '-i', image_path,
-                  '-c:v', 'libx264', '-r', '30', '-vf', 'scale=640:-2', "/tmp/{}.mp4".format(self.name)
-                ],
+                  '-c:v', 'libx264', '-r', '30', '-vf', 'scale=640:-2',
+                  "/tmp/{}.mp4".format(self.name)],
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE if DEBUG else subprocess.DEVNULL
                 )
-                 
+
             if DEBUG:
                 asyncio.create_task(
                     self._log_stderr(convert, 'idle_stream')
                     )
-                
+
             convert_exit_code = await convert.wait()
             if convert_exit_code == 0:
-                idle_stream_command = ['ffmpeg',
+                idle_stream_command = [
+                    'ffmpeg',
                     '-re', '-stream_loop', '-1',
                     '-i', "/tmp/{}.mp4".format(self.name),
                     '-c:v', 'copy', '-shortest',
                     '-f', 'mpegts', 'pipe:'
-                ]
+                    ]
 
         while exit_code > 0:
             self.stream = await asyncio.create_subprocess_exec(
