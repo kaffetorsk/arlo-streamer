@@ -167,7 +167,7 @@ class Camera(Device):
         if last_image:
             # Converting last_image to a video for loop_stream (less CPU consumsion)
             convert = await asyncio.create_subprocess_exec(
-                *['ffmpeg',
+                *['ffmpeg', '-y',
                   '-framerate', '1',
                   '-i', image_path,
                   '-c:v', 'libx264', '-r', '30', '-vf', 'scale=640:-2', "/tmp/{}.mp4".format(self.name)
