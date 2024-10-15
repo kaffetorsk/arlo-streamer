@@ -12,6 +12,7 @@ ARLO_PASS = config('ARLO_PASS')
 IMAP_HOST = config('IMAP_HOST')
 IMAP_USER = config('IMAP_USER')
 IMAP_PASS = config('IMAP_PASS')
+IMAP_GRAB_ALL = config('IMAP_GRAB_ALL', default=False)
 MQTT_BROKER = config('MQTT_BROKER', default=None)
 FFMPEG_OUT = config('FFMPEG_OUT')
 MOTION_TIMEOUT = config('MOTION_TIMEOUT', default=60, cast=int)
@@ -41,7 +42,8 @@ async def main():
         'tfa_type': 'email',
         'tfa_host': IMAP_HOST,
         'tfa_username': IMAP_USER,
-        'tfa_password': IMAP_PASS
+        'tfa_password': IMAP_PASS,
+        'tfa_grab_all': IMAP_GRAB_ALL
     }
 
     if PYAARLO_REFRESH_DEVICES:
