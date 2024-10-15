@@ -165,6 +165,9 @@ class Camera(Device):
         
         # Using last camera's thumbnail as idle stream if exists
         if last_image:
+            logging.debug(
+                f"Last image found for {self.name}, setting as idle"
+            )
             # Converting last_image to a video for loop_stream (less CPU consumsion)
             convert = await asyncio.create_subprocess_exec(
                 *['ffmpeg', '-y',
