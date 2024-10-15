@@ -1,4 +1,4 @@
-git+https://github.com/twrecked/pyaarlo
+git+https://github.com/kaffetorsk/pyaarlo@grab_all
 python-decouple
 aiomqtt==1.2.1
 aiostream
