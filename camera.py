@@ -5,6 +5,7 @@ import shlex
 import os
 from device import Device
 from decouple import config
+from pyaarlo.util import http_get
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
@@ -154,12 +155,45 @@ class Camera(Device):
         Start idle picture, writing to the proxy stream
         """
         exit_code = 1
+        idle_stream_command = ['ffmpeg', '-re', '-stream_loop', '-1', '-i', 'idle.mp4',
+                    '-c:v', 'copy',
+                    '-c:a', 'libmp3lame', '-ar', '44100', '-b:a', '8k',
+                    '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:']
+        
+        image_path = "/tmp/{}.jpg".format(self.name)
+        last_image = http_get(self._arlo.last_image, filename=image_path)
+        
+        # Using last camera's thumbnail as idle stream if exists
+        if last_image:
+            # Converting last_image to a video for loop_stream (less CPU consumsion)
+            convert = await asyncio.create_subprocess_exec(
+                *['ffmpeg',
+                  '-framerate', '1',
+                  '-i', image_path,
+                  '-c:v', 'libx264', '-r', '30', '-vf', 'scale=640:-2', "/tmp/{}.mp4".format(self.name)
+                ],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE if DEBUG else subprocess.DEVNULL
+                )
+                 
+            if DEBUG:
+                asyncio.create_task(
+                    self._log_stderr(convert, 'idle_stream')
+                    )
+                
+            convert_exit_code = await convert.wait()
+            if convert_exit_code == 0:
+                idle_stream_command = ['ffmpeg',
+                    '-re', '-stream_loop', '-1',
+                    '-i', "/tmp/{}.mp4".format(self.name),
+                    '-c:v', 'copy', '-shortest',
+                    '-f', 'mpegts', 'pipe:'
+                ]
+
         while exit_code > 0:
             self.stream = await asyncio.create_subprocess_exec(
-                *['ffmpeg', '-re', '-stream_loop', '-1', '-i', 'idle.mp4',
-                  '-c:v', 'copy',
-                  '-c:a', 'libmp3lame', '-ar', '44100', '-b:a', '8k',
-                  '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
+                *idle_stream_command,
                 stdin=subprocess.DEVNULL,
                 stdout=self.proxy_writer,
                 stderr=subprocess.PIPE if DEBUG else subprocess.DEVNULL
@@ -202,6 +236,8 @@ class Camera(Device):
                 asyncio.create_task(
                     self._log_stderr(self.stream, 'live_stream')
                     )
+        else:
+            logging.debug(f"{self.name}: No stream available.")
 
     async def _stream_timeout(self):
         await asyncio.sleep(self.timeout)
