@@ -13,7 +13,7 @@ RUN python3.11 -m ensurepip
 # Unbuffered logging
 ENV PYTHONUNBUFFERED=TRUE
 
-COPY idle.mp4 requirements.txt ./
+COPY idle.mp4 eye.png requirements.txt ./
 
 RUN pip3.11 install -U --upgrade-strategy eager -r requirements.txt
 

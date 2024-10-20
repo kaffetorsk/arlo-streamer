@@ -3,6 +3,7 @@ import logging
 import asyncio
 import shlex
 import os
+import re
 from device import Device
 from decouple import config
 from utils import download_file
@@ -30,7 +31,8 @@ class Camera(Device):
     STATES = ['idle', 'streaming']
 
     def __init__(self, arlo_camera, ffmpeg_out,
-                 motion_timeout, status_interval, last_image_idle):
+                 motion_timeout, status_interval, last_image_idle,
+                 default_resolution):
         super().__init__(arlo_camera, status_interval)
         self.ffmpeg_out = shlex.split(ffmpeg_out.format(name=self.name))
         self.timeout = motion_timeout
@@ -44,6 +46,10 @@ class Camera(Device):
         self.proxy_reader, self.proxy_writer = os.pipe()
         self._pictures = asyncio.Queue()
         self._listen_pictures = False
+        self._default_resolution = default_resolution
+        self.resolution = None
+        self.idle_video = None
+        self.event_loop = asyncio.get_running_loop()
         logging.info(f"Camera added: {self.name}")
 
     async def run(self):
@@ -52,8 +58,18 @@ class Camera(Device):
         Creates event channel between pyaarlo callbacks and async generator.
         Listens for and passes events to handler.
         """
-        while self._arlo.is_unavailable:
+        while (
+            self._arlo.is_unavailable
+            or (self._arlo.has_batteries and self._arlo.battery_level == 0)
+            or not self._arlo.is_on
+        ):
             await asyncio.sleep(5)
+        logging.info(f"{self.name} availaible, starting stream")
+
+        # Start stream to get resolution
+        await self._start_stream()
+        self.stop_stream()
+
         await self.set_state('idle')
         asyncio.create_task(self._start_proxy_stream())
         await super().run()
@@ -155,14 +171,9 @@ class Camera(Device):
         """
         Start idle picture, writing to the proxy stream
         """
-        exit_code = 1
-        idle_stream_command = [
-                    'ffmpeg', '-re', '-stream_loop', '-1', '-i', 'idle.mp4',
-                    '-c:v', 'copy',
-                    '-c:a', 'libmp3lame', '-ar', '44100', '-b:a', '8k',
-                    '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'
-                    ]
+        default_image_path = "eye.png"
 
+        # Create video from last image if configured
         if self.last_image_idle:
             image_path = f"/tmp/{self.name}.jpg"
             last_image = await download_file(
@@ -173,36 +184,26 @@ class Camera(Device):
                 logging.debug(
                     f"Last image found for {self.name}, setting as idle"
                 )
-                # Converting last_image to a video for loop_stream
-                convert = await asyncio.create_subprocess_exec(
-                    *['ffmpeg', '-y',
-                      '-framerate', '1',
-                      '-i', image_path,
-                      '-c:v', 'libx264', '-r', '30', '-vf', 'scale=640:-2',
-                      "/tmp/{}.mp4".format(self.name)],
-                    stdin=subprocess.DEVNULL,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE if DEBUG else subprocess.DEVNULL
-                    )
+                self.idle_video = await self._create_idle_video(image_path)
 
-                if DEBUG:
-                    asyncio.create_task(
-                        self._log_stderr(convert, 'idle_stream')
-                        )
+        # Either not configured for last_image_idle, or it failed to create
+        # create idle video from default image to cameras resolution
+        if not self.idle_video:
+            self.idle_video = await self._create_idle_video(default_image_path)
 
-                convert_exit_code = await convert.wait()
-                if convert_exit_code == 0:
-                    idle_stream_command = [
-                        'ffmpeg',
-                        '-re', '-stream_loop', '-1',
-                        '-i', "/tmp/{}.mp4".format(self.name),
-                        '-c:v', 'copy', '-shortest',
-                        '-f', 'mpegts', 'pipe:'
-                        ]
+        # Still no idle_video present, revert to default video
+        if not self.idle_video:
+            self.idle_video = "idle.mp4"
 
+        logging.debug(f"{self.name}: idle video set to {self.idle_video}")
+
+        exit_code = 1
         while exit_code > 0:
             self.stream = await asyncio.create_subprocess_exec(
-                *idle_stream_command,
+                *['ffmpeg', '-re', '-stream_loop', '-1', '-i', self.idle_video,
+                  '-c:v', 'copy',
+                  '-c:a', 'libmp3lame', '-ar', '44100', '-b:a', '8k',
+                  '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
                 stdin=subprocess.DEVNULL,
                 stdout=self.proxy_writer,
                 stderr=subprocess.PIPE if DEBUG else subprocess.DEVNULL
@@ -245,6 +246,20 @@ class Camera(Device):
                 asyncio.create_task(
                     self._log_stderr(self.stream, 'live_stream')
                     )
+
+            if not self.resolution:
+                resolution = await self._get_resolution(stream)
+                if resolution:
+                    logging.debug(
+                        f"{self.name}: resolution found: {resolution}"
+                        )
+                    self.resolution = resolution
+                else:
+                    logging.warning(
+                        f"{self.name}: failed to find resolution, setting "
+                        f"default: {self._default_resolution}"
+                        )
+                    self.resolution = self._default_resolution
         else:
             logging.debug(f"{self.name}: No stream available.")
 
@@ -308,6 +323,62 @@ class Camera(Device):
                 await self.event_loop.run_in_executor(
                         None, self._arlo.request_snapshot)
 
+    async def _create_idle_video(self, image_path):
+        """
+        Creates video from still image, with the cameras resolution.
+        Reverts to default on failure.
+        """
+        output_path = f"{self.name}-idle.mp4"
+
+        convert = await asyncio.create_subprocess_exec(
+            *['ffmpeg', '-loop', '1', '-i', image_path,
+              '-f', 'lavfi', '-i', 'anullsrc=r=16000:cl=mono',
+              '-c:v', 'libx264', '-c:a', 'mp2', '-t', '5',
+              '-pix_fmt', 'yuv420p', '-r', '24', '-vf',
+              f"scale={self.resolution[0]}:{self.resolution[1]}",
+              '-f', 'mpegts', '-y', output_path],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE
+            )
+
+        if DEBUG:
+            asyncio.create_task(
+                self._log_stderr(convert, 'create_idle')
+                )
+
+        exit_code = await convert.wait()
+        if exit_code > 0:
+            logging.warning(
+                f"{self.name}: failed to create idle video from {image_path}"
+                )
+            output_path = None
+
+        return output_path
+
+    async def _get_resolution(self, stream):
+        probe = await asyncio.create_subprocess_exec(
+            *['ffprobe', '-v', 'error', '-select_streams', 'v:0',
+              '-show_entries', 'stream=width,height', '-of', 'csv=p=0', stream
+              ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL
+            )
+        stdout, _ = await probe.communicate()
+
+        result = False
+
+        if probe.returncode == 0:
+            try:
+                pattern = r"(\d{3,4}),(\d{3,4})"
+                match = re.search(pattern, stdout.decode())
+                if match:
+                    result = (match.group(1), match.group(2))
+            except UnicodeDecodeError:
+                pass
+
+        return result
+
     async def _log_stderr(self, stream, label):
         """
         Continuously read from stderr and log the output.
@@ -315,6 +386,7 @@ class Camera(Device):
         while True:
             try:
                 line = await stream.stderr.readline()
+
                 if line:
                     logging.debug(
                         f"{self.name} - {label}: {line.decode().strip()}"

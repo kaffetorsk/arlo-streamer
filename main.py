@@ -15,9 +15,10 @@ IMAP_PASS = config('IMAP_PASS')
 IMAP_GRAB_ALL = config('IMAP_GRAB_ALL', default=False)
 MQTT_BROKER = config('MQTT_BROKER', default=None)
 FFMPEG_OUT = config('FFMPEG_OUT')
+DEFAULT_RESOLUTION = config('DEFAULT_RESOLUTION', default=(1280, 768))
 MOTION_TIMEOUT = config('MOTION_TIMEOUT', default=60, cast=int)
 STATUS_INTERVAL = config('STATUS_INTERVAL', default=120, cast=int)
-LAST_IMAGE_IDLE = config('LAST_IMAGE_IDLE', default=False)
+LAST_IMAGE_IDLE = config('LAST_IMAGE_IDLE', default=False, cast=bool)
 DEBUG = config('DEBUG', default=False, cast=bool)
 PYAARLO_BACKEND = config('PYAARLO_BACKEND', default=None)
 PYAARLO_REFRESH_DEVICES = config('PYAARLO_REFRESH_DEVICES', default=0, cast=int)
@@ -69,7 +70,8 @@ async def main():
 
     # Initialize cameras
     cameras = [Camera(
-        c, FFMPEG_OUT, MOTION_TIMEOUT, STATUS_INTERVAL, LAST_IMAGE_IDLE
+        c, FFMPEG_OUT, MOTION_TIMEOUT, STATUS_INTERVAL, LAST_IMAGE_IDLE,
+        DEFAULT_RESOLUTION
         ) for c in arlo.cameras]
 
     # Start both
