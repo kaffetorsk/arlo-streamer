@@ -44,6 +44,7 @@ PYAARLO_STORAGE_DIR: Pyaarlo storage_dir. Define it if you want to change the Py
 PYAARLO_ECDH_CURVE: Allowing you defining the ECDH CURVE to use during pyaarlo authentication
 IMAP_GRAB_ALL: Grabs all mails in the inbox, to avoid slow indexing problems (default: False)
 LAST_IMAGE_IDLE: Set last frame as idle image for the camera (default: False)
+DEFAULT_RESOLUTION: Default resolution for the idle video (default: (1280, 768))
 ```
 ### Running
 ```
