@@ -5,7 +5,7 @@ import shlex
 import os
 from device import Device
 from decouple import config
-from pyaarlo.util import http_get
+from utils import download_file
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
@@ -164,9 +164,10 @@ class Camera(Device):
                     ]
 
         if self.last_image_idle:
-            image_path = "/tmp/{}.jpg".format(self.name)
-            last_image = http_get(self._arlo.last_image, filename=image_path)
-
+            image_path = f"/tmp/{self.name}.jpg"
+            last_image = await download_file(
+                self._arlo.last_image, image_path
+                )
             # Using last camera's thumbnail as idle stream if exists
             if last_image:
                 logging.debug(
