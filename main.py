@@ -12,7 +12,8 @@ ARLO_PASS = config('ARLO_PASS')
 IMAP_HOST = config('IMAP_HOST')
 IMAP_USER = config('IMAP_USER')
 IMAP_PASS = config('IMAP_PASS')
-IMAP_GRAB_ALL = config('IMAP_GRAB_ALL', default=False)
+IMAP_GRAB_ALL = config('IMAP_GRAB_ALL', default=False, cast=bool)
+IMAP_DELETE_AFTER = config('IMAP_DELETE_AFTER', default=False, cast=bool)
 MQTT_BROKER = config('MQTT_BROKER', default=None)
 FFMPEG_OUT = config('FFMPEG_OUT')
 DEFAULT_RESOLUTION = config('DEFAULT_RESOLUTION', default=(1280, 768))
@@ -45,7 +46,8 @@ async def main():
         'tfa_host': IMAP_HOST,
         'tfa_username': IMAP_USER,
         'tfa_password': IMAP_PASS,
-        'tfa_grab_all': IMAP_GRAB_ALL
+        'tfa_grab_all': IMAP_GRAB_ALL,
+        'tfa_delete_after': IMAP_DELETE_AFTER
     }
 
     if PYAARLO_REFRESH_DEVICES:
