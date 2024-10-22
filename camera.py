@@ -334,7 +334,7 @@ class Camera(Device):
             *['ffmpeg', '-loop', '1', '-i', image_path,
               '-f', 'lavfi', '-i', 'anullsrc=r=16000:cl=mono',
               '-c:v', 'libx264', '-c:a', 'mp2', '-t', '5',
-              '-pix_fmt', 'yuv420p', '-r', '24', '-vf',
+              '-pix_fmt', 'yuv420p', '-r', '24', '-g', '24', '-vf',
               f"scale={self.resolution[0]}:{self.resolution[1]}",
               '-f', 'mpegts', '-y', output_path],
             stdin=subprocess.DEVNULL,
