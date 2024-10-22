@@ -386,7 +386,6 @@ class Camera(Device):
         while True:
             try:
                 line = await stream.stderr.readline()
-
                 if line:
                     logging.debug(
                         f"{self.name} - {label}: {line.decode().strip()}"
