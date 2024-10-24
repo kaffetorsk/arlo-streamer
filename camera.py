@@ -28,15 +28,20 @@ class Camera(Device):
     """
 
     # Possible states
-    STATES = ['idle', 'streaming']
+    STATES = [
+        'idle',
+        'streaming',  # arlo-streamer initiated the stream
+        'watching',  # someone else initiated the stream
+        ]
 
     def __init__(self, arlo_camera, ffmpeg_out,
                  motion_timeout, status_interval, last_image_idle,
-                 default_resolution):
+                 default_resolution, watch_refresh_time):
         super().__init__(arlo_camera, status_interval)
         self.ffmpeg_out = shlex.split(ffmpeg_out.format(name=self.name))
         self.timeout = motion_timeout
         self.last_image_idle = last_image_idle
+        self.watch_refresh_time = watch_refresh_time
         self._timeout_task = None
         self.motion = False
         self._state = None
@@ -113,10 +118,15 @@ class Camera(Device):
         running stream.
         """
         if state == 'idle':
-            if self.get_state() == 'streaming':
-                await self._start_stream()
+            match self.get_state():
+                case 'streaming':
+                    await self._start_stream()
+
+                case 'watching':
+                    await self.set_state('idle')
+
         elif state == 'userStreamActive' and self.get_state() != 'streaming':
-            await self.set_state('streaming')
+            await self.set_state('watching')
 
     # Set state in accordance to STATES
     async def set_state(self, new_state):
@@ -138,6 +148,12 @@ class Camera(Device):
 
             case 'streaming':
                 await self._start_stream()
+
+            case 'watching':
+                await self._start_stream(self._arlo.get_stream_url)
+                self._timeout_task = asyncio.create_task(
+                    self._watch_timeout()
+                    )
 
     async def _start_proxy_stream(self):
         """
@@ -223,13 +239,16 @@ class Camera(Device):
                     )
                 await asyncio.sleep(3)
 
-    async def _start_stream(self):
+    async def _start_stream(self, stream_cmd=None):
         """
         Request stream, grab it, kill idle stream and start new ffmpeg instance
         writing to proxy.
         """
-        stream = await self.event_loop.run_in_executor(None,
-                                                       self._arlo.get_stream)
+        if stream_cmd is None:
+            stream_cmd = self._arlo.get_stream
+
+        stream = await self.event_loop.run_in_executor(None, stream_cmd)
+
         if stream:
             self.stop_stream()
 
@@ -266,6 +285,13 @@ class Camera(Device):
     async def _stream_timeout(self):
         await asyncio.sleep(self.timeout)
         await self.set_state('idle')
+
+    async def _watch_timeout(self):
+        await asyncio.sleep(self.timeout)
+        await self.set_state('idle')
+        await asyncio.sleep(self.watch_refresh_time)
+        if self._arlo.is_streaming:
+            await self.set_state('watching')
 
     def stop_stream(self):
         """
