@@ -28,7 +28,11 @@ class Camera(Device):
     """
 
     # Possible states
-    STATES = ['idle', 'streaming']
+    STATES = [
+        'idle',
+        'streaming', # arlo-streamer initiated the stream
+        'watching', # someone else initiated the stream
+        ]
 
     def __init__(self, arlo_camera, ffmpeg_out,
                  motion_timeout, status_interval, last_image_idle,
@@ -113,10 +117,15 @@ class Camera(Device):
         running stream.
         """
         if state == 'idle':
-            if self.get_state() == 'streaming':
-                await self._start_stream()
+            match self.get_state():
+                case 'streaming':
+                    await self._start_stream()
+
+                case 'watching':
+                    await self.set_state('idle')
+            
         elif state == 'userStreamActive' and self.get_state() != 'streaming':
-            await self.set_state('streaming')
+            await self.set_state('watching')
 
     # Set state in accordance to STATES
     async def set_state(self, new_state):
@@ -137,6 +146,9 @@ class Camera(Device):
                 asyncio.create_task(self._start_idle_stream())
 
             case 'streaming':
+                await self._start_stream()
+            
+            case 'watching':
                 await self._start_stream()
 
     async def _start_proxy_stream(self):
