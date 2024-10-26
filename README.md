@@ -40,8 +40,8 @@ DEBUG: True enables full debug (default: False)
 PYAARLO_BACKEND: Pyaarlo backend. (default determined by pyaarlo). Options are `mqtt` and `sse`.
 PYAARLO_REFRESH_DEVICES: Pyaarlo backend device refresh interval (in hours) (default: never)
 PYAARLO_STREAM_TIMEOUT: Pyaarlo backend event stream timeout (in seconds) (default: never)
-PYAARLO_STORAGE_DIR: Pyaarlo storage_dir. Define it if you want to change the Pyaarlo storage directory. (default determined by pyaarlo)
-PYAARLO_ECDH_CURVE: Allowing you defining the ECDH CURVE to use during pyaarlo authentication
+PYAARLO_STORAGE_DIR: Pyaarlo storage_dir. Define it if you want to change the Pyaarlo storage directory. (default: determined by pyaarlo)
+PYAARLO_ECDH_CURVE: Set the initial ECDH curve for login. Pyaarlo will try others if it fails. (default: determined by pyaarlo)
 IMAP_GRAB_ALL: Grabs all mails in the inbox, to avoid slow indexing problems (default: False)
 IMAP_DELETE_AFTER: Deletes mail after extracting code for 2fa (default: False)
 LAST_IMAGE_IDLE: Set last frame as idle image for the camera (default: False)

@@ -35,7 +35,7 @@ cameras:
             - record
     detect:
       width: 1280
-      height: 720
+      height: 768
 ```
 Notice the input args, some tuning might be needed. This atleast works in my setup.
 
