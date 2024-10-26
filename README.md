@@ -7,6 +7,9 @@ This allow arlo cameras to be used in the NVR of your choosing. (e.g. [Frigate](
 The streams will provide an "idle" picture when the camera is not actively streaming.
 Motion will trigger an active stream, replacing the "idle" picture with the actual camera stream.
 
+External streams (typically live view in arlo app) will trigger a watch mode. Due to limitations in pyaarlo this kind of stream will have to be periodically taken down and restablished to see if the stream is still beeing viewed elsewhere.
+
+
 **Note:** For ideal operation, the arlo cameras should not be set to record on motion in the arlo app. This slows down stream setup significantly, leading to loss of valuable frames at the start of the event. A common approach is to choose push notification only, then disable notifications for the arlo app.
 
 ## Usage
@@ -25,7 +28,7 @@ FFMPEG_OUT: out-string for ffmpeg. (e.g. -c:v copy -c:a copy -f flv rtmp://127.0
 ```
 ### Optional
 ```
-MOTION_TIMEOUT: How long to provide active stream after motion (in seconds) (default: 60)
+MOTION_TIMEOUT: How long to provide active stream after motion (in seconds). Also used as refresh interval for external streams (default: 60)
 MQTT_BROKER: If specified, will be used to publish snapshots and status, and control the camera (see MQTT).
 MQTT_PORT: broker port (default: 1883)
 MQTT_USER: broker username. Not setting this will result in an anonymous connection (default: None)
@@ -36,6 +39,7 @@ MQTT_TOPIC_CONTROL: control will be read on this topic. (default: arlo/control/{
 MQTT_TOPIC_MOTION: motion events will be published to this topic. (default: arlo/motion/{name})
 MQTT_RECONNECT_INTERVAL: Wait this amount before retrying connection to broker (in seconds) (default: 5)
 STATUS_INTERVAL: Time between published status messages (in seconds) (default: 120)
+WATCH_REFRESH_TIME: Downtime to check if remote stream is still active (in seconds) (default: 2)
 DEBUG: True enables full debug (default: False)
 PYAARLO_BACKEND: Pyaarlo backend. (default determined by pyaarlo). Options are `mqtt` and `sse`.
 PYAARLO_REFRESH_DEVICES: Pyaarlo backend device refresh interval (in hours) (default: never)
