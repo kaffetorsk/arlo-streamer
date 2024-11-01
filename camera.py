@@ -54,7 +54,6 @@ class Camera(Device):
         self._default_resolution = default_resolution
         self.resolution = None
         self.idle_video = None
-        self.event_loop = asyncio.get_running_loop()
         logging.info(f"Camera added: {self.name}")
 
     async def run(self):

@@ -16,6 +16,7 @@ class Device(object):
         self.name = self._arlo.name.replace(" ", "_").lower()
         self.status_interval = status_interval
         self._state_event = asyncio.Event()
+        self.event_loop = asyncio.get_running_loop()
 
     async def run(self):
         """
