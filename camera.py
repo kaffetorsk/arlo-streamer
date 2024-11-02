@@ -217,7 +217,7 @@ class Camera(Device):
             self.stream = await asyncio.create_subprocess_exec(
                 *['ffmpeg', '-re', '-stream_loop', '-1', '-i', self.idle_video,
                   '-c:v', 'copy',
-                  '-c:a', 'libmp3lame', '-ar', '44100', '-b:a', '8k',
+                  '-c:a', 'copy',
                   '-bsf', 'dump_extra', '-f', 'mpegts', 'pipe:'],
                 stdin=subprocess.DEVNULL,
                 stdout=self.proxy_writer,
@@ -356,9 +356,12 @@ class Camera(Device):
         output_path = f"{self.name}-idle.mp4"
 
         convert = await asyncio.create_subprocess_exec(
-            *['ffmpeg', '-loop', '1', '-i', image_path,
+            *['ffmpeg',
+              '-loop', '1', '-i', image_path,
               '-f', 'lavfi', '-i', 'anullsrc=r=16000:cl=mono',
-              '-c:v', 'libx264', '-c:a', 'mp2', '-t', '5',
+              '-c:v', 'libx264',
+              '-c:a', 'libmp3lame', '-ar', '44100', '-b:a', '8k',
+              '-t', '5',
               '-pix_fmt', 'yuv420p', '-r', '24', '-g', '24', '-vf',
               f"scale={self.resolution[0]}:{self.resolution[1]}",
               '-f', 'mpegts', '-y', output_path],
