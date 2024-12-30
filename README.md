@@ -72,6 +72,7 @@ Payload in a simple string.
 ```
 "START" and "STOP": Starts and stops active stream
 "SNAPSHOT": Requests snapshot to be taken
+"BRIGHTNESS X": Set video brightness to X (integer from -2 to 2)
 ```
 ##### Base Stations
 JSON payload, all keys are optional.
