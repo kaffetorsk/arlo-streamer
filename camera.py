@@ -349,9 +349,18 @@ class Camera(Device):
                     None, self._arlo.request_snapshot
                     )
             case ['BRIGHTNESS', value]:
-                await self.event_loop.run_in_executor(
-                    None, lambda: setattr(self._arlo, 'brightness', value)
-                )
+                try:
+                    value = int(value)
+                    if not (-2 <= value <= 2):
+                        raise ValueError
+                    await self.event_loop.run_in_executor(
+                        None, lambda: setattr(
+                            self._arlo, 'brightness', int(value)
+                            )
+                    )
+                    logging.info(f"{self.name} brightness set to: {value}")
+                except ValueError:
+                    logging.warning(f"Invalid value for brigthness: {value}")
 
     async def _create_idle_video(self, image_path):
         """
