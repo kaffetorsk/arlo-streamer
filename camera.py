@@ -339,14 +339,19 @@ class Camera(Device):
         """
         Handles incoming MQTT commands
         """
-        match payload.upper():
-            case 'START':
+        match payload.strip().upper().split():
+            case ['START']:
                 await self.set_state('streaming')
-            case 'STOP':
+            case ['STOP']:
                 await self.set_state('idle')
-            case 'SNAPSHOT':
+            case ['SNAPSHOT']:
                 await self.event_loop.run_in_executor(
-                        None, self._arlo.request_snapshot)
+                    None, self._arlo.request_snapshot
+                    )
+            case ['BRIGHTNESS', value]:
+                await self.event_loop.run_in_executor(
+                    None, lambda: setattr(self._arlo, 'brightness', value)
+                )
 
     async def _create_idle_video(self, image_path):
         """
